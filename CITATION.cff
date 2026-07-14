@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "使用本工具或方法论时，请引用此仓库及对应版本。"
+title: "OpenAI Compatible API Check"
+type: software
+authors:
+  - name: "AI快站"
+repository-code: "https://github.com/KKWANG4444/openai-compatible-api-check"
+url: "https://docs.aifast.club/model-check/"
+version: 0.2.0
+date-released: 2026-07-15
+license: MIT

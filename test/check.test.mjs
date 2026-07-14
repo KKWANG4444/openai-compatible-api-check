@@ -5,11 +5,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { main } from '../bin/model-api-check.mjs';
-import { formatMarkdown, normalizeBaseUrl, runCheck } from '../src/check.mjs';
+import { formatMarkdown, normalizeBaseUrl, parseJsonObject, protocolFrom, runCheck, usageFrom } from '../src/check.mjs';
 
 const apiKey = 'test-secret-key-that-must-never-appear';
 const model = 'test-model-v1';
-const specialModels = ['nonce-mismatch', 'negative-usage', 'markdown-injection', 'secret-echo'];
+const specialModels = ['nonce-mismatch', 'negative-usage', 'usage-mismatch', 'challenge-mismatch', 'markdown-injection', 'secret-echo'];
 let server;
 let baseUrl;
 
@@ -32,7 +32,7 @@ before(async () => {
       let body = '';
       for await (const chunk of request) body += chunk;
       const payload = JSON.parse(body);
-      const nonce = payload.messages[0].content.split(': ').at(-1);
+      const prompt = payload.messages[0].content;
       const requestedModel = payload.model;
 
       if (requestedModel === 'secret-echo') {
@@ -45,17 +45,37 @@ before(async () => {
         return;
       }
 
-      response.writeHead(200, { 'Content-Type': 'application/json' });
+      let content;
+      if (prompt.startsWith('R1 dynamic challenge:')) {
+        const values = prompt.match(/starts at (\d+), receives (\d+) boxes with (\d+) items each, then ships (\d+)/)?.slice(1).map(Number);
+        const challengeNonce = prompt.match(/"nonce":"([a-f0-9]+)"/)?.[1];
+        const answer = values ? values[0] + values[1] * values[2] - values[3] : null;
+        content = JSON.stringify({
+          answer: requestedModel === 'challenge-mismatch' ? answer + 1 : answer,
+          nonce: challengeNonce,
+        });
+      } else {
+        const nonce = prompt.split(': ').at(-1);
+        content = requestedModel === 'nonce-mismatch' ? 'wrong-output' : nonce;
+      }
+
+      response.writeHead(200, { 'Content-Type': 'application/json', 'X-Request-Id': 'req_test_123' });
       response.end(JSON.stringify({
         id: 'chatcmpl-test',
         object: 'chat.completion',
+        created: 1_784_000_000,
         model: requestedModel === 'markdown-injection' ? 'evil|model\n| injected | row |' : requestedModel,
+        system_fingerprint: 'fp_test',
         choices: [{
           index: 0,
-          message: { role: 'assistant', content: requestedModel === 'nonce-mismatch' ? 'wrong-output' : nonce },
+          message: { role: 'assistant', content },
           finish_reason: 'stop',
         }],
-        usage: { prompt_tokens: 20, completion_tokens: 8, total_tokens: requestedModel === 'negative-usage' ? -1 : 28 },
+        usage: {
+          prompt_tokens: 20,
+          completion_tokens: 8,
+          total_tokens: requestedModel === 'negative-usage' ? -1 : requestedModel === 'usage-mismatch' ? 31 : 28,
+        },
       }));
       return;
     }
@@ -76,6 +96,12 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(report.score, 100);
   assert.equal(report.verdict, '兼容良好');
   assert.equal(report.responseModel, model);
+  assert.equal(report.schemaVersion, 2);
+  assert.equal(report.generator.version, '0.2.0');
+  assert.equal(report.requestCount, 3);
+  assert.equal(report.usage.total, 56);
+  assert.equal(report.signals.systemFingerprint, 'fp_test');
+  assert.equal(report.checks.find((check) => check.id === 'dynamic-challenge')?.passed, true);
   assert.equal(JSON.stringify(report).includes(apiKey), false);
   assert.equal(formatMarkdown(report).includes(apiKey), false);
 });
@@ -100,6 +126,37 @@ test('HTTP 200 但随机 nonce 不匹配时整体判定失败', async () => {
 test('负数 Token 不算有效用量', async () => {
   const report = await runCheck({ baseUrl, model: 'negative-usage', apiKey, allowInsecureLocalhost: true });
   assert.equal(report.checks.find((check) => check.id === 'usage')?.passed, false);
+});
+
+test('Token 总数不满足输入加输出时不通过算术校验', async () => {
+  const report = await runCheck({ baseUrl, model: 'usage-mismatch', apiKey, allowInsecureLocalhost: true });
+  assert.equal(report.checks.find((check) => check.id === 'usage')?.passed, false);
+});
+
+test('R1 动态题答案错误时整体判定失败', async () => {
+  const report = await runCheck({ baseUrl, model: 'challenge-mismatch', apiKey, allowInsecureLocalhost: true });
+  assert.equal(report.checks.find((check) => check.id === 'instruction-following')?.passed, true);
+  assert.equal(report.checks.find((check) => check.id === 'dynamic-challenge')?.passed, false);
+  assert.equal(report.ok, false);
+});
+
+test('协议与 usage 辅助函数严格核对结构和算术', () => {
+  assert.equal(protocolFrom({ id: 'x', object: 'chat.completion', created: 1, choices: [{ message: {}, finish_reason: 'stop' }] }).passed, true);
+  assert.equal(protocolFrom({ choices: [] }).passed, false);
+  assert.deepEqual(usageFrom({ usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 } }), {
+    input: 3,
+    output: 2,
+    total: 5,
+    present: true,
+    arithmeticValid: true,
+  });
+  assert.equal(usageFrom({ usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 9 } }).arithmeticValid, false);
+});
+
+test('动态题 JSON 允许代码围栏但拒绝非对象', () => {
+  assert.deepEqual(parseJsonObject('```json\n{"answer":42,"nonce":"abc"}\n```'), { answer: 42, nonce: 'abc' });
+  assert.equal(parseJsonObject('[1,2,3]'), null);
+  assert.equal(parseJsonObject('not-json'), null);
 });
 
 test('Markdown 动态字段会转义竖线、换行和反斜杠', async () => {

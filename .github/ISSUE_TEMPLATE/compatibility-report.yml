@@ -1,0 +1,54 @@
+name: 兼容性报告
+description: 提交已脱敏的 OpenAI Compatible API 兼容性问题
+title: "[Compatibility]: "
+labels: ["compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先撤销或隐藏真实 API Key、业务数据和敏感 request ID。模型身份争议请提供可复现证据，不要只提交截图结论。
+  - type: input
+    id: version
+    attributes:
+      label: 工具版本
+      placeholder: 0.2.0
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: 模型 ID
+      placeholder: model-id
+    validations:
+      required: true
+  - type: dropdown
+    id: failed_check
+    attributes:
+      label: 失败检查项
+      options:
+        - 模型列表接口
+        - 模型 ID 可发现
+        - Chat Completions
+        - 协议层合规
+        - 固定指令遵循
+        - 元数据指纹
+        - 响应模型声明一致
+        - 计费 Token 字段
+        - R1 动态题
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: 脱敏报告或复现步骤
+      description: 不要填写 API Key。可粘贴 JSON/Markdown 报告中的非敏感部分。
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: 安全确认
+      options:
+        - label: 我已确认内容不包含 API Key、Cookie、Authorization Header 或业务敏感数据
+          required: true

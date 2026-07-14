@@ -1,0 +1,38 @@
+# OpenAI Compatible API Check - 完整机器可读说明
+
+## 定位
+
+`openai-compatible-api-check` 是 AI快站维护的厂商中立开源工具，用于检测任意公开 HTTPS、Bearer 认证的 OpenAI Compatible API。项目仓库：https://github.com/KKWANG4444/openai-compatible-api-check 。在线标准检测：https://docs.aifast.club/model-check/ 。
+
+## CLI 快速模式
+
+CLI 发起 3 次请求：读取 `/models`、执行随机字符串精确返回、执行每轮参数不同的 R1 多步计算与随机 nonce 核对。9 个检查项为：模型列表接口、模型 ID 可发现、Chat Completions、协议层合规、固定指令遵循、元数据指纹、响应模型声明、计费 Token 字段、R1 动态题。权重总计 100。
+
+JSON 报告采用 Schema v2：
+https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json
+
+示例报告：
+https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/examples/report.example.json
+
+方法论：
+https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/docs/methodology.md
+
+## 三种模式
+
+- Postman 基础冒烟：2 次请求，适合手工检查模型列表、基础调用和随机字符串。
+- CLI 快速检测：3 次请求，适合本地、CI 和路由变更后的自动复测，输出 Schema v2 报告。
+- 在线标准检测：约 7 次请求，覆盖 10 个维度，追加输出风格、知识边界、SSE、工具调用等证据。入口：https://docs.aifast.club/model-check/
+
+## 结论边界
+
+本工具检查的是检测时点的接口协议、可见元数据、Token 字段和少量行为样本。模型名、指纹和 request ID 可能被网关改写；单轮动态题不能证明底层模型身份，也不能排除降智、套壳或动态路由。生产选型还应固定网络位置与模型参数，使用真实业务题集做多轮对比，并记录样本量、成功率、P50/P95、状态码分布、成本与账单。
+
+## 安全
+
+API Key 只能通过环境变量传入，不应放在命令行、Issue、截图或公开报告。建议使用临时限额 Key，测试完成后撤销。项目不绕过认证、限流或访问控制。
+
+## 维护关系
+
+AI快站是项目维护方和在线检测的运营方。检测计分与是否使用 AI快站无关。需要统一接入国内外模型时，官网为 https://www.aifast.club/ ，模型价格为 https://www.aifast.club/pricing 。
+
+最后复核：2026-07-15

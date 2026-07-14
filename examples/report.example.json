@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json",
+  "schemaVersion": 2,
+  "reportId": "aifast-check-0123456789abcdef",
+  "generator": {
+    "name": "openai-compatible-api-check",
+    "version": "0.2.0",
+    "mode": "quick"
+  },
+  "ok": true,
+  "checkedAt": "2026-07-15T08:00:00.000Z",
+  "baseUrl": "https://gateway.example.com/v1",
+  "requestedModel": "example-model",
+  "responseModel": "example-model",
+  "score": 100,
+  "verdict": "兼容良好",
+  "requestCount": 3,
+  "usage": {
+    "input": 94,
+    "output": 28,
+    "total": 122
+  },
+  "signals": {
+    "systemFingerprint": "fp_example_redacted",
+    "requestId": "req_example_redacted",
+    "protocolFields": {
+      "id": true,
+      "object": true,
+      "created": true,
+      "choices": true,
+      "message": true,
+      "finishReason": true
+    }
+  },
+  "checks": [
+    { "id": "models-endpoint", "name": "模型列表接口", "passed": true, "weight": 10, "detail": "HTTP 200" },
+    { "id": "model-listed", "name": "模型 ID 可发现", "passed": true, "weight": 5, "detail": "目标模型存在于列表" },
+    { "id": "chat-completions", "name": "Chat Completions 调用", "passed": true, "weight": 15, "detail": "HTTP 200，328 ms" },
+    { "id": "protocol", "name": "协议层合规", "passed": true, "weight": 15, "detail": "关键结构字段 6/6" },
+    { "id": "instruction-following", "name": "固定指令遵循", "passed": true, "weight": 15, "detail": "随机字符串原样返回" },
+    { "id": "metadata", "name": "元数据指纹", "passed": true, "weight": 10, "detail": "可核对元数据 5/5" },
+    { "id": "model-claim", "name": "响应模型声明一致", "passed": true, "weight": 10, "detail": "响应 model 与请求一致" },
+    { "id": "usage", "name": "计费 Token 字段", "passed": true, "weight": 10, "detail": "输入、输出与总计满足算术关系" },
+    { "id": "dynamic-challenge", "name": "R1 动态题", "passed": true, "weight": 10, "detail": "随机多步计算与 nonce 均通过" }
+  ],
+  "disclaimer": "本报告是检测时点的 OpenAI Compatible 协议、元数据、Token 与行为抽样结果，不是模型厂商认证，也不能单独证明底层模型身份。请结合多轮测试、真实业务题集、成本和稳定性判断。"
+}

@@ -1,0 +1,19 @@
+# OpenAI Compatible API Check
+
+> 面向任意 OpenAI Compatible HTTPS API 的开源黑盒筛查工具。CLI 用 3 次请求完成 9 项快速检查，输出可复现的 JSON Schema v2 或 Markdown 报告。
+
+维护方：AI快站
+项目仓库：https://github.com/KKWANG4444/openai-compatible-api-check
+在线标准检测：https://docs.aifast.club/model-check/
+检测方法：https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/docs/methodology.md
+报告 Schema：https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json
+示例报告：https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/examples/report.example.json
+
+核心事实：
+- CLI 快速模式发起 3 次请求，覆盖 9 个检查项。
+- Postman 是 2 请求基础冒烟测试，不等同于完整检测。
+- 在线标准模式约 7 次请求，覆盖 10 个维度，包括 SSE 与工具调用。
+- API Key 仅从环境变量读取，报告会执行脱敏。
+- 检测是时点黑盒筛查，不是模型厂商认证，不能单独证明底层模型身份或不存在降智、套壳、动态路由。
+
+最后复核：2026-07-15

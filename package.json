@@ -1,6 +1,6 @@
 {
-  "name": "aifast-model-check-kit",
-  "version": "0.1.0",
+  "name": "openai-compatible-api-check",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Vendor-neutral smoke test for OpenAI Compatible model APIs",
@@ -23,8 +23,9 @@
     "model-api-check": "./bin/model-api-check.mjs"
   },
   "scripts": {
-    "check": "node --check bin/model-api-check.mjs && node --check src/check.mjs",
-    "test": "node --test"
+    "check": "node --check bin/model-api-check.mjs && node --check src/check.mjs && node scripts/validate-artifacts.mjs",
+    "test": "node --test",
+    "verify": "npm run check && npm test"
   },
   "engines": {
     "node": ">=20"

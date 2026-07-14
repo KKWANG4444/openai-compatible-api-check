@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json",
+  "title": "OpenAI Compatible API Quick Check Report",
+  "description": "Machine-readable output from openai-compatible-api-check schema version 2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "reportId",
+    "generator",
+    "ok",
+    "checkedAt",
+    "baseUrl",
+    "requestedModel",
+    "responseModel",
+    "score",
+    "verdict",
+    "requestCount",
+    "usage",
+    "signals",
+    "checks",
+    "disclaimer"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json"
+    },
+    "schemaVersion": { "const": 2 },
+    "reportId": { "type": "string", "pattern": "^aifast-check-[a-f0-9]{16}$" },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "mode"],
+      "properties": {
+        "name": { "const": "openai-compatible-api-check" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "mode": { "const": "quick" }
+      }
+    },
+    "ok": { "type": "boolean" },
+    "checkedAt": { "type": "string", "format": "date-time" },
+    "baseUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "requestedModel": { "type": "string", "minLength": 1, "maxLength": 180 },
+    "responseModel": { "type": ["string", "null"] },
+    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "verdict": { "enum": ["兼容良好", "部分兼容", "需要排查"] },
+    "requestCount": { "const": 3 },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output", "total"],
+      "properties": {
+        "input": { "type": ["integer", "null"], "minimum": 0 },
+        "output": { "type": ["integer", "null"], "minimum": 0 },
+        "total": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["systemFingerprint", "requestId", "protocolFields"],
+      "properties": {
+        "systemFingerprint": { "type": ["string", "null"], "maxLength": 160 },
+        "requestId": { "type": ["string", "null"] },
+        "protocolFields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "object", "created", "choices", "message", "finishReason"],
+          "properties": {
+            "id": { "type": "boolean" },
+            "object": { "type": "boolean" },
+            "created": { "type": "boolean" },
+            "choices": { "type": "boolean" },
+            "message": { "type": "boolean" },
+            "finishReason": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "passed", "weight", "detail"],
+        "properties": {
+          "id": {
+            "enum": [
+              "models-endpoint",
+              "model-listed",
+              "chat-completions",
+              "protocol",
+              "instruction-following",
+              "metadata",
+              "model-claim",
+              "usage",
+              "dynamic-challenge"
+            ]
+          },
+          "name": { "type": "string", "minLength": 1 },
+          "passed": { "type": "boolean" },
+          "weight": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "detail": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "disclaimer": { "type": "string", "minLength": 20 }
+  }
+}
