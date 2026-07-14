@@ -1,4 +1,6 @@
 import { readFile } from 'node:fs/promises';
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
 
 const readJson = async (path) => JSON.parse(await readFile(new URL(path, import.meta.url), 'utf8'));
 const readText = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -19,6 +21,14 @@ const fail = (message) => {
 };
 
 if (schema.$schema !== 'https://json-schema.org/draft/2020-12/schema') fail('JSON Schema 版本错误');
+
+const ajv = new Ajv2020({ allErrors: true, strict: true });
+addFormats(ajv);
+const validateReport = ajv.compile(schema);
+if (!validateReport(example)) {
+  fail(`示例报告不符合 Schema：${ajv.errorsText(validateReport.errors, { separator: '；' })}`);
+}
+
 if (example.schemaVersion !== 2 || example.generator?.version !== '0.2.0') fail('示例报告版本错误');
 if (example.$schema !== schema.$id) fail('示例报告未指向当前 Schema');
 if (!Array.isArray(example.checks) || example.checks.length !== 9) fail('示例报告必须包含 9 项检查');
