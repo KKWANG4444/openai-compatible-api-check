@@ -1,0 +1,33 @@
+{
+  "name": "aifast-model-check-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vendor-neutral smoke test for OpenAI Compatible model APIs",
+  "keywords": [
+    "openai-compatible",
+    "api-check",
+    "llm-gateway",
+    "model-verification",
+    "api-smoke-test"
+  ],
+  "homepage": "https://docs.aifast.club/model-check/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KKWANG4444/openai-compatible-api-check.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KKWANG4444/openai-compatible-api-check/issues"
+  },
+  "bin": {
+    "model-api-check": "./bin/model-api-check.mjs"
+  },
+  "scripts": {
+    "check": "node --check bin/model-api-check.mjs && node --check src/check.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

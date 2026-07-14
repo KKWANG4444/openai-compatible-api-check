@@ -1,0 +1,140 @@
+{
+  "info": {
+    "_postman_id": "683eaa7b-3df2-49c8-a748-916eaf8fb332",
+    "name": "OpenAI Compatible API Smoke Test",
+    "description": "Vendor-neutral smoke tests for public HTTPS OpenAI Compatible APIs. API keys remain in Postman variables and are not included in this collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.example.com/v1",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "model",
+      "value": "your-model-id",
+      "type": "string"
+    },
+    {
+      "key": "check_nonce",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_key}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01 - List models",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/models",
+          "host": ["{{base_url}}"],
+          "path": ["models"]
+        },
+        "description": "Checks authentication and whether the provider exposes an OpenAI-compatible model list."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returns a model list', function () {",
+              "  const data = pm.response.json();",
+              "  pm.expect(data).to.have.property('data').that.is.an('array');",
+              "});",
+              "pm.test('Configured model is discoverable', function () {",
+              "  const data = pm.response.json();",
+              "  pm.expect(data.data.map(item => item.id)).to.include(pm.collectionVariables.get('model'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Chat completions",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(",
+              "  'check_nonce',",
+              "  'API_CHECK_' + pm.variables.replaceIn('{{$guid}}').replace(/-/g, '').slice(0, 16)",
+              ");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returns the exact random nonce', function () {",
+              "  const data = pm.response.json();",
+              "  pm.expect(data.choices).to.be.an('array').that.is.not.empty;",
+              "  pm.expect(data.choices[0].message.content).to.eql(pm.collectionVariables.get('check_nonce'));",
+              "});",
+              "pm.test('Returns a model claim', function () {",
+              "  const data = pm.response.json();",
+              "  pm.expect(data.model).to.be.a('string').that.is.not.empty;",
+              "});",
+              "pm.test('Returns a valid token total when supported', function () {",
+              "  const data = pm.response.json();",
+              "  if (data.usage) {",
+              "    pm.expect(data.usage.total_tokens).to.be.a('number');",
+              "    pm.expect(data.usage.total_tokens).to.be.at.least(0);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"{{model}}\",\n  \"temperature\": 0,\n  \"max_tokens\": 64,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Reply with exactly this text and nothing else: {{check_nonce}}\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/chat/completions",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "completions"]
+        },
+        "description": "Checks a minimal non-streaming Chat Completions response and common metadata fields."
+      }
+    }
+  ]
+}
