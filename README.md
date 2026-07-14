@@ -104,6 +104,7 @@ Collection 包含模型列表和 Chat Completions 两组请求。每轮请求都
 
 | 需求 | 入口 |
 | --- | --- |
+| 检测、迁移、排错与工具配置总入口 | [AI快站开发者中心](https://github.com/KKWANG4444/aifast-developer-hub) |
 | 浏览器里运行完整检测 | [大模型 API 中转站检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-matrix) |
 | 理解报告与检测边界 | [模型检测报告判读](https://kkwang4444.github.io/api-status/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-matrix) |
 | OpenAI-compatible 迁移与排错 | [生产接入指南](https://github.com/KKWANG4444/llm-api-proxy-china) |
