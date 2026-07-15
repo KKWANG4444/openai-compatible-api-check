@@ -1,9 +1,82 @@
 import { randomInt, randomUUID } from 'node:crypto';
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 
 const WEB_CHECK_URL = 'https://docs.aifast.club/model-check/';
 const REPORT_SCHEMA_URL = 'https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json';
 const MIN_TIMEOUT_MS = 1_000;
 const MAX_TIMEOUT_MS = 120_000;
+
+function isPublicIpv4(address) {
+  const octets = address.split('.').map(Number);
+  if (octets.length !== 4 || octets.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) return false;
+  const [a, b, c] = octets;
+  return !(
+    a === 0
+    || a === 10
+    || a === 127
+    || (a === 100 && b >= 64 && b <= 127)
+    || (a === 169 && b === 254)
+    || (a === 172 && b >= 16 && b <= 31)
+    || (a === 192 && b === 0 && c === 0)
+    || (a === 192 && b === 0 && c === 2)
+    || (a === 192 && b === 168)
+    || (a === 198 && (b === 18 || b === 19))
+    || (a === 198 && b === 51 && c === 100)
+    || (a === 203 && b === 0 && c === 113)
+    || a >= 224
+  );
+}
+
+function isPublicIpAddress(address) {
+  const normalized = String(address ?? '').replace(/^\[|\]$/g, '').split('%')[0].toLowerCase();
+  const version = isIP(normalized);
+  if (version === 4) return isPublicIpv4(normalized);
+  if (version !== 6) return false;
+
+  const mappedIpv4 = normalized.match(/(?:^|:)ffff:(\d+\.\d+\.\d+\.\d+)$/)?.[1];
+  if (mappedIpv4) return isPublicIpv4(mappedIpv4);
+
+  return !(
+    normalized === '::'
+    || normalized === '::1'
+    || normalized.startsWith('fc')
+    || normalized.startsWith('fd')
+    || /^fe[89ab]/.test(normalized)
+    || /^fe[cdef]/.test(normalized)
+    || normalized.startsWith('ff')
+    || normalized.startsWith('100:')
+    || normalized.startsWith('2001:2:')
+    || normalized.startsWith('2001:db8:')
+  );
+}
+
+function isPrivateHostname(hostname) {
+  const normalized = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  return normalized === 'localhost'
+    || normalized.endsWith('.localhost')
+    || normalized.endsWith('.local')
+    || normalized.endsWith('.internal')
+    || normalized.endsWith('.home.arpa')
+    || (isIP(normalized) > 0 && !isPublicIpAddress(normalized));
+}
+
+async function assertPublicHostname(hostname, resolve = lookup) {
+  const normalized = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (isPrivateHostname(normalized)) throw new Error('Base URL 必须指向公网地址');
+  if (isIP(normalized)) return;
+
+  let records;
+  try {
+    records = await resolve(normalized, { all: true, verbatim: true });
+  } catch {
+    throw new Error('Base URL 域名无法解析');
+  }
+  if (!Array.isArray(records) || records.length === 0) throw new Error('Base URL 域名无法解析');
+  if (records.some(({ address }) => !isPublicIpAddress(address))) {
+    throw new Error('Base URL 域名解析到了私网或保留地址');
+  }
+}
 
 function normalizeBaseUrl(value, allowInsecureLocalhost = false) {
   let url;
@@ -20,6 +93,9 @@ function normalizeBaseUrl(value, allowInsecureLocalhost = false) {
   }
   if (url.username || url.password || url.search || url.hash) {
     throw new Error('Base URL 不能包含账号、密码、查询参数或片段');
+  }
+  if (!allowInsecureLocalhost && isPrivateHostname(hostname)) {
+    throw new Error('Base URL 必须指向公网地址');
   }
   return url.toString().replace(/\/$/, '');
 }
@@ -186,6 +262,9 @@ export async function runCheck({
   }
 
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl, allowInsecureLocalhost);
+  if (!allowInsecureLocalhost) {
+    await assertPublicHostname(new URL(normalizedBaseUrl).hostname);
+  }
   const authorization = { Authorization: `Bearer ${normalizedApiKey}` };
   const reportNonce = randomUUID().replaceAll('-', '').slice(0, 16);
   const instructionToken = `AIFAST_CHECK_${reportNonce}`;
@@ -260,7 +339,7 @@ export async function runCheck({
     $schema: REPORT_SCHEMA_URL,
     schemaVersion: 2,
     reportId: `aifast-check-${reportNonce}`,
-    generator: { name: 'openai-compatible-api-check', version: '0.2.0', mode: 'quick' },
+    generator: { name: 'openai-compatible-api-check', version: '0.2.1', mode: 'quick' },
     ok: chat.ok && protocol.passed && instructionPassed && challengePassed,
     checkedAt: new Date().toISOString(),
     baseUrl: normalizedBaseUrl,
@@ -308,4 +387,4 @@ export function formatMarkdown(report) {
   ].join('\n');
 }
 
-export { markdownInline, normalizeBaseUrl, parseJsonObject, protocolFrom, usageFrom };
+export { assertPublicHostname, isPublicIpAddress, markdownInline, normalizeBaseUrl, parseJsonObject, protocolFrom, usageFrom };

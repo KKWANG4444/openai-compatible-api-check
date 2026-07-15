@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { main } from '../bin/model-api-check.mjs';
-import { formatMarkdown, normalizeBaseUrl, parseJsonObject, protocolFrom, runCheck, usageFrom } from '../src/check.mjs';
+import { assertPublicHostname, formatMarkdown, isPublicIpAddress, normalizeBaseUrl, parseJsonObject, protocolFrom, runCheck, usageFrom } from '../src/check.mjs';
 
 const apiKey = 'test-secret-key-that-must-never-appear';
 const model = 'test-model-v1';
@@ -97,7 +97,7 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(report.verdict, '兼容良好');
   assert.equal(report.responseModel, model);
   assert.equal(report.schemaVersion, 2);
-  assert.equal(report.generator.version, '0.2.0');
+  assert.equal(report.generator.version, '0.2.1');
   assert.equal(report.requestCount, 3);
   assert.equal(report.usage.total, 56);
   assert.equal(report.signals.systemFingerprint, 'fp_test');
@@ -175,6 +175,42 @@ test('Base URL 拒绝凭据、查询参数和片段', () => {
 test('公网地址必须使用 HTTPS', () => {
   assert.throws(() => normalizeBaseUrl('http://example.com/v1'), /HTTPS/);
   assert.equal(normalizeBaseUrl('https://example.com/v1/'), 'https://example.com/v1');
+});
+
+test('Base URL 拒绝本机、私网和保留地址', () => {
+  for (const value of [
+    'https://127.0.0.1/v1',
+    'https://10.0.0.8/v1',
+    'https://192.168.1.8/v1',
+    'https://[::1]/v1',
+    'https://gateway.local/v1',
+    'https://service.internal/v1',
+  ]) {
+    assert.throws(() => normalizeBaseUrl(value), /公网地址/);
+  }
+});
+
+test('公网 IP 分类覆盖 IPv4、IPv6 和 IPv4-mapped IPv6', () => {
+  assert.equal(isPublicIpAddress('8.8.8.8'), true);
+  assert.equal(isPublicIpAddress('2606:4700:4700::1111'), true);
+  assert.equal(isPublicIpAddress('10.0.0.1'), false);
+  assert.equal(isPublicIpAddress('169.254.1.1'), false);
+  assert.equal(isPublicIpAddress('2001:db8::1'), false);
+  assert.equal(isPublicIpAddress('::ffff:127.0.0.1'), false);
+});
+
+test('域名解析结果包含私网地址时拒绝检测', async () => {
+  await assert.doesNotReject(assertPublicHostname('public.example', async () => [
+    { address: '8.8.8.8', family: 4 },
+    { address: '2606:4700:4700::1111', family: 6 },
+  ]));
+  await assert.rejects(assertPublicHostname('mixed.example', async () => [
+    { address: '8.8.8.8', family: 4 },
+    { address: '10.0.0.9', family: 4 },
+  ]), /私网或保留地址/);
+  await assert.rejects(assertPublicHostname('missing.example', async () => {
+    throw new Error('ENOTFOUND');
+  }), /无法解析/);
 });
 
 test('模型、API Key 与超时参数执行严格校验', async () => {

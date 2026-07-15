@@ -29,7 +29,7 @@ if (!validateReport(example)) {
   fail(`示例报告不符合 Schema：${ajv.errorsText(validateReport.errors, { separator: '；' })}`);
 }
 
-if (example.schemaVersion !== 2 || example.generator?.version !== '0.2.0') fail('示例报告版本错误');
+if (example.schemaVersion !== 2 || example.generator?.version !== '0.2.1') fail('示例报告版本错误');
 if (example.$schema !== schema.$id) fail('示例报告未指向当前 Schema');
 if (!Array.isArray(example.checks) || example.checks.length !== 9) fail('示例报告必须包含 9 项检查');
 
@@ -45,6 +45,16 @@ for (const marker of ['sk-', 'bearer ', 'api_key', 'apikey']) {
 }
 
 if (!postman?.info?.name || !Array.isArray(postman.item) || postman.item.length < 2) fail('Postman Collection 结构无效');
+const postmanScripts = postman.item
+  .flatMap((item) => item.event ?? [])
+  .flatMap((event) => event.script?.exec ?? [])
+  .join('\n');
+if (!postmanScripts.includes("data.model).to.eql(pm.collectionVariables.get('model'))")) {
+  fail('Postman 未精确校验响应模型声明');
+}
+if (!postmanScripts.includes('data.usage.total_tokens).to.eql(input + output)')) {
+  fail('Postman 未校验 Token 算术');
+}
 
 const requiredUrls = [
   'https://docs.aifast.club/model-check/',

@@ -4,7 +4,7 @@
   "reportId": "aifast-check-0123456789abcdef",
   "generator": {
     "name": "openai-compatible-api-check",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "mode": "quick"
   },
   "ok": true,
