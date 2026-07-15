@@ -1,7 +1,14 @@
 {
   "name": "openai-compatible-api-check",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
+  "files": [
+    "bin/",
+    "src/",
+    "schema/",
+    "examples/report.example.json",
+    "postman/OpenAI-Compatible-API-Smoke-Test.postman_collection.json"
+  ],
   "type": "module",
   "description": "Vendor-neutral smoke test for OpenAI Compatible model APIs",
   "keywords": [

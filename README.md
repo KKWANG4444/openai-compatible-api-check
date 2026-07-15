@@ -5,6 +5,7 @@
 [![CI](https://github.com/KKWANG4444/openai-compatible-api-check/actions/workflows/ci.yml/badge.svg)](https://github.com/KKWANG4444/openai-compatible-api-check/actions/workflows/ci.yml)
 [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2F22%2F24-339933)](https://nodejs.org/)
 [![Report Schema v2](https://img.shields.io/badge/report-schema%20v2-2563eb)](schema/report.schema.json)
+[![Release v0.2.2](https://img.shields.io/badge/release-v0.2.2-0f766e)](https://github.com/KKWANG4444/openai-compatible-api-check/releases/tag/v0.2.2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![在线检测](https://img.shields.io/badge/在线检测-10%20个维度-0f766e)](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-badge)
 
@@ -15,6 +16,19 @@
 ## 直接开始
 
 需要 Node.js 20、22 或 24。
+
+无需克隆仓库，直接从 GitHub 运行当前版本：
+
+```bash
+export OPENAI_API_KEY="你的临时限额 Key"
+npx --yes --package=github:KKWANG4444/openai-compatible-api-check \
+  model-api-check \
+  --base-url https://gateway.example.com/v1 \
+  --model your-model-id \
+  --output reports/check.md
+```
+
+需要固定版本或审查源码时再克隆仓库：
 
 ```bash
 git clone https://github.com/KKWANG4444/openai-compatible-api-check.git
@@ -79,6 +93,7 @@ Postman Collection 不覆盖 R1 动态题，也不等同于在线完整检测。
 
 ## 报告与证据复用
 
+- [v0.2.2 Release 与可下载运行包](https://github.com/KKWANG4444/openai-compatible-api-check/releases/tag/v0.2.2)
 - [JSON Schema v2](schema/report.schema.json)
 - [示例 JSON 报告](examples/report.example.json)
 - [报告字段说明](docs/report-schema.md)
@@ -149,14 +164,14 @@ Collection 包含模型列表和 Chat Completions 两组请求，每轮生成随
 | 需求 | 入口 |
 | --- | --- |
 | 检测、迁移、排错与工具配置总入口 | [AI快站开发者中心](https://github.com/KKWANG4444/aifast-developer-hub) |
-| 浏览器运行 10 维标准检测 | [大模型 API 中转站检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-matrix) |
-| 判读检测报告与风险边界 | [模型检测报告判读](https://kkwang4444.github.io/api-status/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-matrix) |
+| 浏览器运行 10 维标准检测 | [大模型 API 中转站检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-online-check) |
+| 判读检测报告与风险边界 | [模型检测报告判读](https://kkwang4444.github.io/api-status/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-report-guide) |
 | OpenAI Compatible 迁移与排错 | [生产接入与 API Doctor](https://github.com/KKWANG4444/llm-api-proxy-china) |
 | Cursor、Dify、Claude Code 等配置 | [开发工具接入指南](https://github.com/KKWANG4444/ai-api-proxy-china-guide) |
 | 成功率、P50/P95 与错误分布 | [稳定性监控方法](https://github.com/KKWANG4444/AI-API-Stability-Tracker) |
 | 500+ 模型目录、维护信息与证据 | [AI API 状态与证据中心](https://github.com/KKWANG4444/api-status) |
 
-AI快站提供 500+ 国内外模型统一接入、国外模型国内直连、高速稳定线路、99% 模型可用性目标和企业发票支持。需要实际接入时，请以[官网](https://www.aifast.club/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-footer)与[控制台模型价格](https://www.aifast.club/pricing?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-footer)的当前展示为准。
+AI快站提供 500+ 国内外模型统一接入、国外模型国内直连、高速稳定线路、99% 模型可用性目标和企业发票支持。需要实际接入时，请以[官网](https://www.aifast.club/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=cli-readme-footer-website)与[控制台模型价格](https://www.aifast.club/pricing?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=cli-readme-footer-pricing)的当前展示为准。
 
 ## 本地验证
 

@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, symlink } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
-import { main } from '../bin/model-api-check.mjs';
+import { fileURLToPath } from 'node:url';
+import { isMainModule, main } from '../bin/model-api-check.mjs';
 import { assertPublicHostname, formatMarkdown, isPublicIpAddress, normalizeBaseUrl, parseJsonObject, protocolFrom, runCheck, usageFrom } from '../src/check.mjs';
 
 const apiKey = 'test-secret-key-that-must-never-appear';
@@ -97,7 +98,7 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(report.verdict, '兼容良好');
   assert.equal(report.responseModel, model);
   assert.equal(report.schemaVersion, 2);
-  assert.equal(report.generator.version, '0.2.1');
+  assert.equal(report.generator.version, '0.2.2');
   assert.equal(report.requestCount, 3);
   assert.equal(report.usage.total, 56);
   assert.equal(report.signals.systemFingerprint, 'fp_test');
@@ -240,6 +241,18 @@ test('CLI 根据 report.ok 返回失败码并自动创建嵌套输出目录', as
     assert.equal(stdout, '');
     assert.match(stderr, /报告已写入/);
     assert.equal(await readFile(outputPath, 'utf8'), '# failed report\n');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('CLI 通过符号链接启动时仍能识别主模块', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'model-api-check-link-'));
+  const cliPath = fileURLToPath(new URL('../bin/model-api-check.mjs', import.meta.url));
+  const linkedPath = join(directory, 'model-api-check');
+  try {
+    await symlink(cliPath, linkedPath);
+    assert.equal(isMainModule(linkedPath), true);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
