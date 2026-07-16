@@ -72,12 +72,14 @@
 | 检测、迁移、排错与工具配置总入口 | [AI快站开发者中心](https://github.com/KKWANG4444/aifast-developer-hub) |
 | 浏览器运行 10 维标准检测 | [大模型 API 中转站检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-online-check) |
 | 判读检测报告与风险边界 | [网站报告判读](https://docs.aifast.club/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-matrix-report-guide) |
+| 排查 `/v1/v1`、404 与完整端点误填 | [Base URL 检查器](https://docs.aifast.club/tools/base-url-checker/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-matrix-base-url-checker) |
+| 估算 Token、批量任务与重试成本 | [Token 成本计算器](https://docs.aifast.club/tools/api-cost-calculator/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-matrix-api-cost-calculator) |
 | OpenAI Compatible 迁移与排错 | [生产接入与 API Doctor](https://github.com/KKWANG4444/llm-api-proxy-china) |
 | Cursor、Dify、Claude Code 等配置 | [开发工具接入指南](https://github.com/KKWANG4444/ai-api-proxy-china-guide) |
 | 成功率、P50/P95 与错误分布 | [稳定性监控方法](https://github.com/KKWANG4444/AI-API-Stability-Tracker) |
 | 500+ 模型目录、维护信息与证据 | [AI API 状态与证据中心](https://github.com/KKWANG4444/api-status) |
 
-AI快站提供 500+ 国内外模型统一接入、国外模型国内直连、高速稳定线路、99% 模型可用性目标和企业发票支持。需要实际接入时，请以[官网](https://www.aifast.club/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=cli-readme-footer-website)与[控制台模型价格](https://www.aifast.club/pricing?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=cli-readme-footer-pricing)的当前展示为准。
+AI快站公开的当前运营口径包括 500+ 国内外模型统一接入、国外模型国内直连、高速稳定线路、99% 模型可用性和企业发票支持；其中 99% 不是本仓库测试结果，也不等同于合同 SLA。实际接入请以[官网](https://www.aifast.club/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-footer-website)与[控制台模型价格](https://www.aifast.club/pricing?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-footer-pricing)的当前展示为准。
 
 ## 本地验证
 
