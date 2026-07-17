@@ -20,6 +20,8 @@
 
 [查看检测报告判读教程](https://docs.aifast.club/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-readme-report-guide)
 
+Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions 在线检测范围内。配置 Codex 时应改用 [Codex API 中转配置教程](https://docs.aifast.club/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-codex)和[Responses、工具调用、上下文压缩与会话恢复验收清单](https://docs.aifast.club/troubleshooting/codex-gateway-checklist/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-codex-checklist)。
+
 ## 九项快速检查
 
 | 检查项 | 权重 | 采集的证据 |
@@ -74,6 +76,7 @@
 | 判读检测报告与风险边界 | [网站报告判读](https://docs.aifast.club/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-matrix-report-guide) |
 | 排查 `/v1/v1`、404 与完整端点误填 | [Base URL 检查器](https://docs.aifast.club/tools/base-url-checker/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-matrix-base-url-checker) |
 | 估算 Token、批量任务与重试成本 | [Token 成本计算器](https://docs.aifast.club/tools/api-cost-calculator/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-matrix-api-cost-calculator) |
+| 配置和验收 Codex Responses API | [Codex API 配置与排错](https://docs.aifast.club/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-matrix-codex) |
 | OpenAI Compatible 迁移与排错 | [生产接入与 API Doctor](https://github.com/KKWANG4444/llm-api-proxy-china) |
 | Cursor、Dify、Claude Code 等配置 | [开发工具接入指南](https://github.com/KKWANG4444/ai-api-proxy-china-guide) |
 | 成功率、P50/P95 与错误分布 | [稳定性监控方法](https://github.com/KKWANG4444/AI-API-Stability-Tracker) |

@@ -27,6 +27,8 @@ https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/docs/methodo
 
 本工具检查的是检测时点的接口协议、可见元数据、Token 字段和少量行为样本。模型名、指纹和 request ID 可能被网关改写；单轮动态题不能证明底层模型身份，也不能排除降智、套壳或动态路由。生产选型还应固定网络位置与模型参数，使用真实业务题集做多轮对比，并记录样本量、成功率、P50/P95、状态码分布、成本与账单。
 
+Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions 在线检测范围内。Codex 配置与验收应使用 https://docs.aifast.club/tools/codex/ 和 https://docs.aifast.club/troubleshooting/codex-gateway-checklist/ 。
+
 ## 安全
 
 API Key 只能通过环境变量传入，不应放在命令行、Issue、截图或公开报告。建议使用临时限额 Key，测试完成后撤销。项目不绕过认证、限流或访问控制。

@@ -5,6 +5,8 @@
 维护方：AI快站
 项目仓库：https://github.com/KKWANG4444/openai-compatible-api-check
 在线标准检测：https://docs.aifast.club/model-check/
+Codex 自定义 Provider 配置：https://docs.aifast.club/tools/codex/
+Codex Responses 与工具事件验收：https://docs.aifast.club/troubleshooting/codex-gateway-checklist/
 检测方法：https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/docs/methodology.md
 报告 Schema：https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json
 示例报告：https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/examples/report.example.json
