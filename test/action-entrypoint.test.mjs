@@ -64,6 +64,7 @@ function runAction({ environment = {}, cwd }) {
       env: {
         ...process.env,
         MODEL_API_CHECK_ROOT: repositoryRoot,
+        GITHUB_WORKSPACE: cwd,
         INPUT_BASE_URL: baseUrl,
         INPUT_MODEL: model,
         INPUT_API_KEY: apiKey,
