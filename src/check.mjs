@@ -339,7 +339,7 @@ export async function runCheck({
     $schema: REPORT_SCHEMA_URL,
     schemaVersion: 2,
     reportId: `aifast-check-${reportNonce}`,
-    generator: { name: 'openai-compatible-api-check', version: '1.0.0', mode: 'quick' },
+    generator: { name: 'openai-compatible-api-check', version: '1.0.1', mode: 'quick' },
     ok: chat.ok && protocol.passed && instructionPassed && challengePassed,
     checkedAt: new Date().toISOString(),
     baseUrl: normalizedBaseUrl,

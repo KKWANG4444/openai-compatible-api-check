@@ -123,6 +123,7 @@ jobs:
         with:
           name: openai-compatible-api-report
           path: ${{ steps.api-check.outputs.report-path }}
+          if-no-files-found: error
 ```
 
 检查失败时步骤返回非零状态，工作流会变红；脱敏后的 Markdown 报告同时写入 Job Summary，也可以作为 Artifact 保存。Action 不接受命令行明文密钥，报告生成前会对上游回显的密钥做替换。

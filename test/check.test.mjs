@@ -98,7 +98,7 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(report.verdict, '兼容良好');
   assert.equal(report.responseModel, model);
   assert.equal(report.schemaVersion, 2);
-  assert.equal(report.generator.version, '1.0.0');
+  assert.equal(report.generator.version, '1.0.1');
   assert.equal(report.requestCount, 3);
   assert.equal(report.usage.total, 56);
   assert.equal(report.signals.systemFingerprint, 'fp_test');
@@ -248,6 +248,16 @@ test('CLI 根据 report.ok 返回失败码并自动创建嵌套输出目录', as
 
 test('CLI 支持常见的 -h 帮助参数', () => {
   assert.deepEqual(parseArgs(['-h']), { help: true });
+});
+
+test('CLI 支持版本参数', async () => {
+  let stdout = '';
+  const status = await main(['--version'], {}, {
+    stdout: { write: (value) => { stdout += value; } },
+    stderr: { write: () => {} },
+  });
+  assert.equal(status, 0);
+  assert.equal(stdout, '1.0.1\n');
 });
 
 test('CLI 通过符号链接启动时仍能识别主模块', async () => {

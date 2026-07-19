@@ -18,6 +18,7 @@ function usage() {
   --output FILE        将报告写入文件；默认输出到终端
   --timeout MS         单次请求超时，默认 30000，范围 1000-120000
   -h, --help           显示帮助
+  --version            显示版本
 
 安全说明：
   工具不接受命令行明文 Key，避免密钥进入 shell history。`;
@@ -28,6 +29,7 @@ export function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const current = argv[index];
     if (current === '--help' || current === '-h') return { help: true };
+    if (current === '--version') return { version: true };
     if (!current.startsWith('--')) throw new Error(`无法识别参数：${current}`);
     const next = argv[index + 1];
     if (!next || next.startsWith('--')) throw new Error(`${current} 缺少参数值`);
@@ -61,6 +63,10 @@ export async function main(
     const args = parseArgs(argv);
     if (args.help) {
       io.stdout.write(`${usage()}\n`);
+      return 0;
+    }
+    if (args.version) {
+      io.stdout.write('1.0.1\n');
       return 0;
     }
 

@@ -29,11 +29,23 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Validate action metadata
-        run: ruby -e 'require "yaml"; YAML.load_file("action.yml"); puts "action.yml valid"'
+        run: |
+          ruby -e '
+            require "yaml"
+            metadata = YAML.load_file("action.yml")
+            abort "invalid action name" unless metadata["name"] == "OpenAI Compatible API Check"
+            abort "invalid action runtime" unless metadata.dig("runs", "using") == "docker"
+            abort "missing Dockerfile" unless metadata.dig("runs", "image") == "Dockerfile"
+            abort "missing required input" unless metadata.dig("inputs", "api-key", "required") == true
+            abort "missing output" unless metadata.dig("outputs", "report-path")
+            puts "action.yml semantics valid"
+          '
       - name: Build GitHub Action image
         run: docker build -t openai-compatible-api-check-action .
       - name: Smoke-test GitHub Action container
         run: |
+          docker run --rm --entrypoint node openai-compatible-api-check-action \
+            /opt/model-api-check/bin/model-api-check.mjs --version | grep -qx '1.0.1'
           set +e
           output=$(docker run --rm openai-compatible-api-check-action 2>&1)
           status=$?
