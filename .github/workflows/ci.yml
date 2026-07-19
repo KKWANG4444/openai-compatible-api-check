@@ -37,15 +37,41 @@ jobs:
             abort "invalid action runtime" unless metadata.dig("runs", "using") == "docker"
             abort "missing Dockerfile" unless metadata.dig("runs", "image") == "Dockerfile"
             abort "missing required input" unless metadata.dig("inputs", "api-key", "required") == true
+            expected_args = [
+              "${{ inputs.base-url }}",
+              "${{ inputs.model }}",
+              "${{ inputs.api-key }}",
+              "${{ inputs.timeout }}",
+              "${{ inputs.report-path }}",
+            ]
+            abort "Docker inputs are not wired through runs.args" unless metadata.dig("runs", "args") == expected_args
             abort "missing output" unless metadata.dig("outputs", "report-path")
             puts "action.yml semantics valid"
           '
+      - name: Exercise local action through GitHub runner
+        id: local-action
+        continue-on-error: true
+        uses: ./
+        with:
+          base-url: https://example.com/v1
+          model: ci-input-wiring
+          api-key: ci-placeholder-key
+          timeout: "1000"
+          report-path: reports/ci-input-wiring.md
+      - name: Verify GitHub passed Docker action inputs
+        if: always()
+        env:
+          OUTCOME: ${{ steps.local-action.outcome }}
+        run: |
+          test "$OUTCOME" = failure
+          test -f reports/ci-input-wiring.md
+          grep -q 'ci-input-wiring' reports/ci-input-wiring.md
       - name: Build GitHub Action image
         run: docker build -t openai-compatible-api-check-action .
       - name: Smoke-test GitHub Action container
         run: |
           docker run --rm --entrypoint node openai-compatible-api-check-action \
-            /opt/model-api-check/bin/model-api-check.mjs --version | grep -qx '1.0.1'
+            /opt/model-api-check/bin/model-api-check.mjs --version | grep -qx '1.0.2'
           set +e
           output=$(docker run --rm openai-compatible-api-check-action 2>&1)
           status=$?

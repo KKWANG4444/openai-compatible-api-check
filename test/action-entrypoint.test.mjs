@@ -58,18 +58,20 @@ after(async () => {
 });
 
 function runAction({ environment = {}, cwd }) {
+  const args = [
+    environment.INPUT_BASE_URL ?? baseUrl,
+    environment.INPUT_MODEL ?? model,
+    environment.INPUT_API_KEY ?? apiKey,
+    environment.INPUT_TIMEOUT ?? '30000',
+    environment.INPUT_REPORT_PATH ?? 'reports/openai-compatible-api-check.md',
+  ];
   return new Promise((resolve, reject) => {
-    const child = spawn(entrypoint, [], {
+    const child = spawn(entrypoint, args, {
       cwd,
       env: {
         ...process.env,
         MODEL_API_CHECK_ROOT: repositoryRoot,
         GITHUB_WORKSPACE: cwd,
-        INPUT_BASE_URL: baseUrl,
-        INPUT_MODEL: model,
-        INPUT_API_KEY: apiKey,
-        INPUT_TIMEOUT: '30000',
-        INPUT_REPORT_PATH: 'reports/openai-compatible-api-check.md',
         MODEL_API_CHECK_ALLOW_INSECURE_LOCALHOST: '1',
         ...environment,
       },

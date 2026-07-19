@@ -98,7 +98,7 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(report.verdict, '兼容良好');
   assert.equal(report.responseModel, model);
   assert.equal(report.schemaVersion, 2);
-  assert.equal(report.generator.version, '1.0.1');
+  assert.equal(report.generator.version, '1.0.2');
   assert.equal(report.requestCount, 3);
   assert.equal(report.usage.total, 56);
   assert.equal(report.signals.systemFingerprint, 'fp_test');
@@ -124,14 +124,16 @@ test('HTTP 200 但随机 nonce 不匹配时整体判定失败', async () => {
   assert.equal(report.ok, false);
 });
 
-test('负数 Token 不算有效用量', async () => {
+test('负数 Token 会让整体部署门禁失败', async () => {
   const report = await runCheck({ baseUrl, model: 'negative-usage', apiKey, allowInsecureLocalhost: true });
   assert.equal(report.checks.find((check) => check.id === 'usage')?.passed, false);
+  assert.equal(report.ok, false);
 });
 
-test('Token 总数不满足输入加输出时不通过算术校验', async () => {
+test('Token 总数不满足输入加输出时会让整体部署门禁失败', async () => {
   const report = await runCheck({ baseUrl, model: 'usage-mismatch', apiKey, allowInsecureLocalhost: true });
   assert.equal(report.checks.find((check) => check.id === 'usage')?.passed, false);
+  assert.equal(report.ok, false);
 });
 
 test('R1 动态题答案错误时整体判定失败', async () => {
@@ -257,7 +259,7 @@ test('CLI 支持版本参数', async () => {
     stderr: { write: () => {} },
   });
   assert.equal(status, 0);
-  assert.equal(stdout, '1.0.1\n');
+  assert.equal(stdout, '1.0.2\n');
 });
 
 test('CLI 通过符号链接启动时仍能识别主模块', async () => {

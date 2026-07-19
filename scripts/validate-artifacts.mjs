@@ -29,7 +29,7 @@ if (!validateReport(example)) {
   fail(`示例报告不符合 Schema：${ajv.errorsText(validateReport.errors, { separator: '；' })}`);
 }
 
-if (example.schemaVersion !== 2 || example.generator?.version !== '1.0.1') fail('示例报告版本错误');
+if (example.schemaVersion !== 2 || example.generator?.version !== '1.0.2') fail('示例报告版本错误');
 if (example.$schema !== schema.$id) fail('示例报告未指向当前 Schema');
 if (!Array.isArray(example.checks) || example.checks.length !== 9) fail('示例报告必须包含 9 项检查');
 

@@ -30,3 +30,9 @@ outputs:
 runs:
   using: docker
   image: Dockerfile
+  args:
+    - ${{ inputs.base-url }}
+    - ${{ inputs.model }}
+    - ${{ inputs.api-key }}
+    - ${{ inputs.timeout }}
+    - ${{ inputs.report-path }}
