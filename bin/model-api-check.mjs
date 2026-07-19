@@ -66,7 +66,7 @@ export async function main(
       return 0;
     }
     if (args.version) {
-      io.stdout.write('1.0.2\n');
+      io.stdout.write('1.0.3\n');
       return 0;
     }
 

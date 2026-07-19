@@ -6,6 +6,6 @@ authors:
   - name: "AI快站"
 repository-code: "https://github.com/KKWANG4444/openai-compatible-api-check"
 url: "https://docs.aifast.club/model-check/"
-version: 1.0.2
+version: 1.0.3
 date-released: 2026-07-19
 license: MIT

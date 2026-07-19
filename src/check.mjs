@@ -238,6 +238,25 @@ function parseJsonObject(value) {
   }
 }
 
+const REQUIRED_CHECK_IDS = [
+  'models-endpoint',
+  'model-listed',
+  'chat-completions',
+  'protocol',
+  'instruction-following',
+  'metadata',
+  'model-claim',
+  'usage',
+  'dynamic-challenge',
+];
+
+function requiredChecksPassed(checks) {
+  if (!Array.isArray(checks) || checks.length !== REQUIRED_CHECK_IDS.length) return false;
+  const byId = new Map(checks.map((check) => [check?.id, check]));
+  return byId.size === REQUIRED_CHECK_IDS.length
+    && REQUIRED_CHECK_IDS.every((id) => byId.get(id)?.passed === true);
+}
+
 function scoreVerdict(score) {
   if (score >= 85) return '兼容良好';
   if (score >= 65) return '部分兼容';
@@ -339,8 +358,8 @@ export async function runCheck({
     $schema: REPORT_SCHEMA_URL,
     schemaVersion: 2,
     reportId: `aifast-check-${reportNonce}`,
-    generator: { name: 'openai-compatible-api-check', version: '1.0.2', mode: 'quick' },
-    ok: checks.every((check) => check.passed),
+    generator: { name: 'openai-compatible-api-check', version: '1.0.3', mode: 'quick' },
+    ok: requiredChecksPassed(checks),
     checkedAt: new Date().toISOString(),
     baseUrl: normalizedBaseUrl,
     requestedModel,
@@ -387,4 +406,4 @@ export function formatMarkdown(report) {
   ].join('\n');
 }
 
-export { assertPublicHostname, isPublicIpAddress, markdownInline, normalizeBaseUrl, parseJsonObject, protocolFrom, usageFrom };
+export { assertPublicHostname, isPublicIpAddress, markdownInline, normalizeBaseUrl, parseJsonObject, protocolFrom, requiredChecksPassed, usageFrom };
