@@ -18,9 +18,16 @@ report_path="${INPUT_REPORT_PATH:-reports/openai-compatible-api-check.md}"
 timeout="${INPUT_TIMEOUT:-30000}"
 workspace="${GITHUB_WORKSPACE:-$(pwd)}"
 case "$report_path" in
-  /*) absolute_report_path="$report_path" ;;
-  *) absolute_report_path="$workspace/$report_path" ;;
+  /*)
+    echo "error: input report-path must be relative to the workspace" >&2
+    exit 2
+    ;;
+  *'..'*)
+    echo "error: input report-path cannot contain .." >&2
+    exit 2
+    ;;
 esac
+absolute_report_path="$workspace/$report_path"
 
 root="${MODEL_API_CHECK_ROOT:-/opt/model-api-check}"
 export MODEL_API_CHECK_KEY="$INPUT_API_KEY"

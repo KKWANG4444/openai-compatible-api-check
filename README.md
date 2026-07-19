@@ -96,7 +96,7 @@ npm run verify
 
 ## 在 GitHub Actions 持续验收
 
-如果你的应用依赖某个 OpenAI Compatible 网关，可以在部署或定时任务里直接运行本仓库的 Action。API Key 这一行应改成 `${{ secrets.LLM_API_KEY }}`，密钥放在 GitHub Secrets，不要写进工作流文件。
+如果你的应用依赖某个 OpenAI Compatible 网关，可以在部署或定时任务里直接运行本仓库的 Action。先在仓库 Settings → Secrets and variables → Actions 中创建名为 `LLM_API_KEY` 的 Secret，不要把密钥直接写进工作流文件。
 
 ```yaml
 name: LLM gateway check
@@ -117,7 +117,7 @@ jobs:
         with:
           base-url: https://api.example.com/v1
           model: your-exact-model-id
-          api-key: your-LLM_API_KEY-secret
+          api-key: ${{ secrets.LLM_API_KEY }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

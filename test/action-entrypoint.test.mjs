@@ -113,3 +113,16 @@ test('GitHub Action entrypoint rejects a missing API key', async () => {
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('GitHub Action entrypoint keeps report output inside the workspace', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'model-api-check-action-path-'));
+  try {
+    for (const reportPath of ['/tmp/outside.md', '../outside.md']) {
+      const result = await runAction({ cwd: directory, environment: { INPUT_REPORT_PATH: reportPath } });
+      assert.equal(result.code, 2);
+      assert.match(result.stderr, /report-path/);
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

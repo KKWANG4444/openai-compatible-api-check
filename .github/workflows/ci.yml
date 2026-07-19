@@ -32,3 +32,11 @@ jobs:
         run: ruby -e 'require "yaml"; YAML.load_file("action.yml"); puts "action.yml valid"'
       - name: Build GitHub Action image
         run: docker build -t openai-compatible-api-check-action .
+      - name: Smoke-test GitHub Action container
+        run: |
+          set +e
+          output=$(docker run --rm openai-compatible-api-check-action 2>&1)
+          status=$?
+          set -e
+          test "$status" -eq 2
+          grep -q "input base-url is required" <<< "$output"
