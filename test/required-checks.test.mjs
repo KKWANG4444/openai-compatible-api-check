@@ -24,8 +24,16 @@ test('every advertised check is individually required by the deployment gate', (
   }
 });
 
-test('missing or duplicate required checks cannot pass the deployment gate', () => {
+test('missing, duplicate, or unknown required checks cannot pass the deployment gate', () => {
   const passing = checkIds.map((id) => ({ id, passed: true }));
   assert.equal(requiredChecksPassed(passing.slice(1)), false);
   assert.equal(requiredChecksPassed([...passing, passing[0]]), false);
+
+  const duplicateReplacingRequired = passing.map((check) => ({ ...check }));
+  duplicateReplacingRequired[1] = { ...duplicateReplacingRequired[0] };
+  assert.equal(requiredChecksPassed(duplicateReplacingRequired), false);
+
+  const unknownReplacingRequired = passing.map((check) => ({ ...check }));
+  unknownReplacingRequired[1] = { id: 'unknown-check', passed: true };
+  assert.equal(requiredChecksPassed(unknownReplacingRequired), false);
 });
