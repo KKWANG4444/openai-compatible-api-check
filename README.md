@@ -126,7 +126,7 @@ jobs:
           if-no-files-found: error
 ```
 
-检查失败时步骤返回非零状态，工作流会变红；脱敏后的 Markdown 报告同时写入 Job Summary，也可以作为 Artifact 保存。Action 不接受命令行明文密钥，报告生成前会对上游回显的密钥做替换。
+协议检测执行完成但有必检项未通过时，步骤返回非零状态，工作流会变红；此时脱敏后的 Markdown 报告会写入 Job Summary，也可以作为 Artifact 保存。若在参数校验或DNS解析阶段提前终止，则不会生成检测报告，错误原因会直接显示在步骤日志中。Action 不接受命令行明文密钥，报告生成前会对上游回显的密钥做替换。
 
 首次接入可先用[浏览器在线检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=github-action&utm_content=readme-action-section)确认 Base URL 和模型 ID，再把稳定的验收参数放进 CI。
 
