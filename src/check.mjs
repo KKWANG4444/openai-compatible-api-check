@@ -358,7 +358,7 @@ export async function runCheck({
     $schema: REPORT_SCHEMA_URL,
     schemaVersion: 2,
     reportId: `aifast-check-${reportNonce}`,
-    generator: { name: 'openai-compatible-api-check', version: '1.0.3', mode: 'quick' },
+    generator: { name: 'openai-compatible-api-check', version: '1.0.4', mode: 'quick' },
     ok: requiredChecksPassed(checks),
     checkedAt: new Date().toISOString(),
     baseUrl: normalizedBaseUrl,

@@ -1,6 +1,6 @@
 {
   "name": "openai-compatible-api-check",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "files": [
     "bin/",
