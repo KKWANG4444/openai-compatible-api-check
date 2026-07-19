@@ -37,13 +37,7 @@ jobs:
             abort "invalid action runtime" unless metadata.dig("runs", "using") == "docker"
             abort "missing Dockerfile" unless metadata.dig("runs", "image") == "Dockerfile"
             abort "missing required input" unless metadata.dig("inputs", "api-key", "required") == true
-            expected_args = [
-              "${{ inputs.base-url }}",
-              "${{ inputs.model }}",
-              "${{ inputs.api-key }}",
-              "${{ inputs.timeout }}",
-              "${{ inputs.report-path }}",
-            ]
+            expected_args = metadata.fetch("inputs").keys.map { |id| "${" + "{ inputs.#{id} }}" }
             abort "Docker inputs are not wired through runs.args" unless metadata.dig("runs", "args") == expected_args
             abort "missing output" unless metadata.dig("outputs", "report-path")
             puts "action.yml semantics valid"
