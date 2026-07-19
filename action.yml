@@ -1,0 +1,32 @@
+name: OpenAI Compatible API Check
+description: Test an OpenAI-compatible endpoint in CI and write a redacted compatibility report
+author: AIFast
+branding:
+  icon: check-circle
+  color: green
+inputs:
+  base-url:
+    description: OpenAI-compatible base URL including /v1
+    required: true
+  model:
+    description: Exact model ID to test
+    required: true
+  api-key:
+    description: API key stored in GitHub Secrets
+    required: true
+  timeout:
+    description: Per-request timeout in milliseconds
+    required: false
+    default: "30000"
+  report-path:
+    description: Markdown report path relative to the workspace
+    required: false
+    default: reports/openai-compatible-api-check.md
+outputs:
+  report-path:
+    description: Path to the redacted Markdown report
+  result:
+    description: passed when every required check succeeds
+runs:
+  using: docker
+  image: Dockerfile

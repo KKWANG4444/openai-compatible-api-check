@@ -17,7 +17,7 @@ function usage() {
   --format FORMAT      markdown 或 json，默认 markdown
   --output FILE        将报告写入文件；默认输出到终端
   --timeout MS         单次请求超时，默认 30000，范围 1000-120000
-  --help               显示帮助
+  -h, --help           显示帮助
 
 安全说明：
   工具不接受命令行明文 Key，避免密钥进入 shell history。`;
@@ -27,7 +27,7 @@ export function parseArgs(argv) {
   const values = new Map();
   for (let index = 0; index < argv.length; index += 1) {
     const current = argv[index];
-    if (current === '--help') return { help: true };
+    if (current === '--help' || current === '-h') return { help: true };
     if (!current.startsWith('--')) throw new Error(`无法识别参数：${current}`);
     const next = argv[index + 1];
     if (!next || next.startsWith('--')) throw new Error(`${current} 缺少参数值`);
@@ -76,6 +76,7 @@ export async function main(
       model: args.model,
       apiKey,
       timeoutMs: Number(args.timeout || 30_000),
+      allowInsecureLocalhost: environment.MODEL_API_CHECK_ALLOW_INSECURE_LOCALHOST === '1',
     });
     const output = format === 'json' ? `${JSON.stringify(report, null, 2)}\n` : `${dependencies.formatMarkdown(report)}\n`;
 

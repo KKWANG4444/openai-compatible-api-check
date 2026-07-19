@@ -23,3 +23,12 @@ jobs:
       - run: npm ci
       - run: npm audit --audit-level=moderate
       - run: npm run verify
+
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Validate action metadata
+        run: ruby -e 'require "yaml"; YAML.load_file("action.yml"); puts "action.yml valid"'
+      - name: Build GitHub Action image
+        run: docker build -t openai-compatible-api-check-action .
