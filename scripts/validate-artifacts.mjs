@@ -8,8 +8,9 @@ const readText = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const schema = await readJson('../schema/report.schema.json');
 const example = await readJson('../examples/report.example.json');
 const postman = await readJson('../postman/OpenAI-Compatible-API-Smoke-Test.postman_collection.json');
-const [readme, methodology, reportSchema, llms, llmsFull] = await Promise.all([
+const [readme, readmeEn, methodology, reportSchema, llms, llmsFull] = await Promise.all([
   readText('../README.md'),
+  readText('../README_EN.md'),
   readText('../docs/methodology.md'),
   readText('../docs/report-schema.md'),
   readText('../llms.txt'),
@@ -60,8 +61,12 @@ const requiredUrls = [
   'https://docs.aifast.club/model-check/',
   'https://github.com/KKWANG4444/openai-compatible-api-check',
 ];
-for (const [name, content] of Object.entries({ readme, methodology, reportSchema, llms, llmsFull })) {
+for (const [name, content] of Object.entries({ readme, readmeEn, methodology, reportSchema, llms, llmsFull })) {
   if (!content.trim()) fail(`${name} 为空`);
+}
+if (!readmeEn.includes('https://docs.aifast.club/en/model-check/')) fail('英文 README 缺少英文在线检测入口');
+if (!readmeEn.includes('https://docs.aifast.club/en/payment/') || !readmeEn.includes('utm_campaign=international-payment')) {
+  fail('英文 README 缺少国际支付与账户设置入口');
 }
 for (const url of requiredUrls) {
   if (!readme.includes(url) || !llms.includes(url) || !llmsFull.includes(url)) fail(`关键入口缺失：${url}`);
