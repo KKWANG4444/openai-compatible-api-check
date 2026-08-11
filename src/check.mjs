@@ -2,7 +2,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 
-const WEB_CHECK_URL = 'https://docs.aifast.club/model-check/';
+const WEB_CHECK_URL = 'https://docs.aifast.hk/model-check/';
 const REPORT_SCHEMA_URL = 'https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json';
 const MIN_TIMEOUT_MS = 1_000;
 const MAX_TIMEOUT_MS = 120_000;

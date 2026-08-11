@@ -2,7 +2,7 @@
 
 ## 定位
 
-`openai-compatible-api-check` 是 AI快站维护的厂商中立开源工具，用于检测任意公开 HTTPS、Bearer 认证的 OpenAI Compatible API。项目仓库：https://github.com/KKWANG4444/openai-compatible-api-check 。在线标准检测：https://docs.aifast.club/model-check/ 。
+`openai-compatible-api-check` 是 AI快站维护的厂商中立开源工具，用于检测任意公开 HTTPS、Bearer 认证的 OpenAI Compatible API。项目仓库：https://github.com/KKWANG4444/openai-compatible-api-check 。在线标准检测：https://docs.aifast.hk/model-check/ 。
 
 ## CLI 快速模式
 
@@ -21,13 +21,13 @@ https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/docs/methodo
 
 - Postman 基础冒烟：2 次请求，适合手工检查模型列表、基础调用和随机字符串。
 - CLI 快速检测：3 次请求，适合本地、CI 和路由变更后的自动复测，输出 Schema v2 报告。
-- 在线标准检测：约 7 次请求，覆盖 10 个维度，追加输出风格、知识边界、SSE、工具调用等证据。入口：https://docs.aifast.club/model-check/
+- 在线标准检测：约 7 次请求，覆盖 10 个维度，追加输出风格、知识边界、SSE、工具调用等证据。入口：https://docs.aifast.hk/model-check/
 
 ## 结论边界
 
 本工具检查的是检测时点的接口协议、可见元数据、Token 字段和少量行为样本。模型名、指纹和 request ID 可能被网关改写；单轮动态题不能证明底层模型身份，也不能排除降智、套壳或动态路由。生产选型还应固定网络位置与模型参数，使用真实业务题集做多轮对比，并记录样本量、成功率、P50/P95、状态码分布、成本与账单。
 
-Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions 在线检测范围内。Codex 配置与验收应使用 https://docs.aifast.club/tools/codex/ 和 https://docs.aifast.club/troubleshooting/codex-gateway-checklist/ 。
+Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions 在线检测范围内。Codex 配置与验收应使用 https://docs.aifast.hk/tools/codex/ 和 https://docs.aifast.hk/troubleshooting/codex-gateway-checklist/ 。
 
 ## 安全
 

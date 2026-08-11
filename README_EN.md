@@ -1,6 +1,6 @@
 # OpenAI Compatible API Check: Methodology and Report Schema
 
-[中文](README.md) · [English](README_EN.md) · [Run the online check](https://docs.aifast.club/en/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-language-nav)
+[中文](README.md) · [English](README_EN.md) · [Run the online check](https://docs.aifast.hk/en/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-language-nav)
 
 This repository publishes selected protocol checks, report schemas, examples, and regression tests used to review the browser-based AIFast model quality checker. Regular users do not need to download a program or install Node.js.
 
@@ -8,13 +8,13 @@ This repository publishes selected protocol checks, report schemas, examples, an
 
 ## Use the Website
 
-[Run the browser-based LLM API gateway check](https://docs.aifast.club/en/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-primary)
+[Run the browser-based LLM API gateway check](https://docs.aifast.hk/en/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-primary)
 
 The website accepts public HTTPS OpenAI Compatible APIs and checks model declarations, token fields, randomized tasks, output behavior, knowledge-boundary signals, SSE, and tool calls. Use a temporary, low-limit API key and revoke it after testing.
 
-[Read the report interpretation guide](https://docs.aifast.club/en/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-report-guide)
+[Read the report interpretation guide](https://docs.aifast.hk/en/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-report-guide)
 
-Codex custom providers use the Responses API and are outside the current Chat Completions browser test. Use the [Codex custom provider guide](https://docs.aifast.club/en/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-en-codex) and [Codex gateway validation checklist](https://docs.aifast.club/en/troubleshooting/codex-gateway-checklist/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-en-codex-checklist) instead.
+Codex custom providers use the Responses API and are outside the current Chat Completions browser test. Use the [Codex custom provider guide](https://docs.aifast.hk/en/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-en-codex) and [Codex gateway validation checklist](https://docs.aifast.hk/en/troubleshooting/codex-gateway-checklist/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-en-codex-checklist) instead.
 
 ## Evidence Covered by the Repository
 
@@ -52,11 +52,11 @@ Model declarations, system fingerprints, and request IDs may be rewritten by a g
 
 ## AIFast Technical Resources
 
-- [Online model quality check](https://docs.aifast.club/en/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-resource-check)
-- [Base URL checker](https://docs.aifast.club/en/tools/base-url-checker/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-en-base-url)
+- [Online model quality check](https://docs.aifast.hk/en/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-resource-check)
+- [Base URL checker](https://docs.aifast.hk/en/tools/base-url-checker/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-en-base-url)
 - [AIFast Developer Hub](https://github.com/KKWANG4444/aifast-developer-hub)
 - [API integration guide](https://github.com/KKWANG4444/ai-api-proxy-china-guide/blob/main/README_EN.md)
 - [Production troubleshooting guide](https://github.com/KKWANG4444/llm-api-proxy-china/blob/main/README_EN.md)
-- [International payment and account setup](https://docs.aifast.club/en/payment/?utm_source=github&utm_medium=repository&utm_campaign=international-payment&utm_content=source-en-payment)
+- [International payment and account setup](https://docs.aifast.hk/en/payment/?utm_source=github&utm_medium=repository&utm_campaign=international-payment&utm_content=source-en-payment)
 
 This repository is maintained by the operator of AIFast. Product statements, point-in-time test results, and contractual service levels are kept separate.

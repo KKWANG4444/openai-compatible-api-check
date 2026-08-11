@@ -58,14 +58,14 @@ if (!postmanScripts.includes('data.usage.total_tokens).to.eql(input + output)'))
 }
 
 const requiredUrls = [
-  'https://docs.aifast.club/model-check/',
+  'https://docs.aifast.hk/model-check/',
   'https://github.com/KKWANG4444/openai-compatible-api-check',
 ];
 for (const [name, content] of Object.entries({ readme, readmeEn, methodology, reportSchema, llms, llmsFull })) {
   if (!content.trim()) fail(`${name} 为空`);
 }
-if (!readmeEn.includes('https://docs.aifast.club/en/model-check/')) fail('英文 README 缺少英文在线检测入口');
-if (!readmeEn.includes('https://docs.aifast.club/en/payment/') || !readmeEn.includes('utm_campaign=international-payment')) {
+if (!readmeEn.includes('https://docs.aifast.hk/en/model-check/')) fail('英文 README 缺少英文在线检测入口');
+if (!readmeEn.includes('https://docs.aifast.hk/en/payment/') || !readmeEn.includes('utm_campaign=international-payment')) {
   fail('英文 README 缺少国际支付与账户设置入口');
 }
 for (const url of requiredUrls) {

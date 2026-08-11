@@ -1,6 +1,6 @@
 # 大模型 API 在线检测：规则与技术实现
 
-[中文](README.md) · [English](README_EN.md) · [在线检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-language-nav)
+[中文](README.md) · [English](README_EN.md) · [在线检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-language-nav)
 
 <p align="center"><img src="assets/social-preview.png" width="100%" alt="OpenAI Compatible API 模型检测：协议、元数据、Token、输出风格、cutoff 与动态题"></p>
 
@@ -8,7 +8,7 @@
 [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2F22%2F24-339933)](https://nodejs.org/)
 [![Report Schema v2](https://img.shields.io/badge/report-schema%20v2-2563eb)](schema/report.schema.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![在线检测](https://img.shields.io/badge/在线检测-10%20个维度-0f766e)](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-badge)
+[![在线检测](https://img.shields.io/badge/在线检测-10%20个维度-0f766e)](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-badge)
 
 本仓库公开在线检测使用的部分协议检查规则、报告结构和回归测试，供技术审计与方法复核。普通用户无需下载程序、安装 Node.js 或离开网站。
 
@@ -16,13 +16,13 @@
 
 ## 直接在网站检测
 
-[立即运行大模型 API 中转站检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-readme-primary)
+[立即运行大模型 API 中转站检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-readme-primary)
 
 网站支持公开 HTTPS OpenAI Compatible API，可检查模型声明、Token、随机动态题、输出风格、知识边界、SSE 和工具调用，并继续查看分项结果。
 
-[查看检测报告判读教程](https://docs.aifast.club/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-readme-report-guide)
+[查看检测报告判读教程](https://docs.aifast.hk/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-readme-report-guide)
 
-Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions 在线检测范围内。配置 Codex 时应改用 [Codex API 中转配置教程](https://docs.aifast.club/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-codex)和[Responses、工具调用、上下文压缩与会话恢复验收清单](https://docs.aifast.club/troubleshooting/codex-gateway-checklist/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-codex-checklist)。
+Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions 在线检测范围内。配置 Codex 时应改用 [Codex API 中转配置教程](https://docs.aifast.hk/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-codex)和[Responses、工具调用、上下文压缩与会话恢复验收清单](https://docs.aifast.hk/troubleshooting/codex-gateway-checklist/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-codex-checklist)。
 
 ## 九项快速检查
 
@@ -44,7 +44,7 @@ Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions �
 
 | 模式 | 请求量 | 适合场景 | 能力边界 |
 | --- | ---: | --- | --- |
-| [在线标准检测](https://docs.aifast.club/model-check/) | 约 7 | 普通用户与开发者 | 10 个维度，包含输出风格、知识边界、SSE、工具调用等证据 |
+| [在线标准检测](https://docs.aifast.hk/model-check/) | 约 7 | 普通用户与开发者 | 10 个维度，包含输出风格、知识边界、SSE、工具调用等证据 |
 | GitHub Action | 3 | 部署门禁与定时巡检 | 核对模型列表、Chat Completions、协议、Token 与动态题，失败时阻断工作流 |
 | 仓库回归测试 | 3 | 维护者审查规则 | 9 项协议与行为检查，用于防止检测逻辑回归 |
 
@@ -76,11 +76,11 @@ Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions �
 | 需求 | 入口 |
 | --- | --- |
 | 检测、迁移、排错与工具配置总入口 | [AI快站开发者中心](https://github.com/KKWANG4444/aifast-developer-hub) |
-| 浏览器运行 10 维标准检测 | [大模型 API 中转站检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-online-check) |
-| 判读检测报告与风险边界 | [网站报告判读](https://docs.aifast.club/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-matrix-report-guide) |
-| 排查 `/v1/v1`、404 与完整端点误填 | [Base URL 检查器](https://docs.aifast.club/tools/base-url-checker/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-matrix-base-url-checker) |
-| 估算 Token、批量任务与重试成本 | [Token 成本计算器](https://docs.aifast.club/tools/api-cost-calculator/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-matrix-api-cost-calculator) |
-| 配置和验收 Codex Responses API | [Codex API 配置与排错](https://docs.aifast.club/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-matrix-codex) |
+| 浏览器运行 10 维标准检测 | [大模型 API 中转站检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=cli-readme-online-check) |
+| 判读检测报告与风险边界 | [网站报告判读](https://docs.aifast.hk/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-matrix-report-guide) |
+| 排查 `/v1/v1`、404 与完整端点误填 | [Base URL 检查器](https://docs.aifast.hk/tools/base-url-checker/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-matrix-base-url-checker) |
+| 估算 Token、批量任务与重试成本 | [Token 成本计算器](https://docs.aifast.hk/tools/api-cost-calculator/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=source-matrix-api-cost-calculator) |
+| 配置和验收 Codex Responses API | [Codex API 配置与排错](https://docs.aifast.hk/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-matrix-codex) |
 | OpenAI Compatible 迁移与排错 | [生产接入与 API Doctor](https://github.com/KKWANG4444/llm-api-proxy-china) |
 | Cursor、Dify、Claude Code 等配置 | [开发工具接入指南](https://github.com/KKWANG4444/ai-api-proxy-china-guide) |
 | 成功率、P50/P95 与错误分布 | [稳定性监控方法](https://github.com/KKWANG4444/AI-API-Stability-Tracker) |
@@ -131,7 +131,7 @@ jobs:
 
 协议检测执行完成但有必检项未通过时，步骤返回非零状态，工作流会变红；此时脱敏后的 Markdown 报告会写入 Job Summary，也可以作为 Artifact 保存。若在参数校验或DNS解析阶段提前终止，则不会生成检测报告，错误原因会直接显示在步骤日志中。Action 不接受命令行明文密钥，报告生成前会对上游回显的密钥做替换。
 
-首次接入可先用[浏览器在线检测](https://docs.aifast.club/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=readme-action-section)确认 Base URL 和模型 ID，再把稳定的验收参数放进 CI。
+首次接入可先用[浏览器在线检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=readme-action-section)确认 Base URL 和模型 ID，再把稳定的验收参数放进 CI。
 
 ## 许可证
 
