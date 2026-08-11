@@ -35,6 +35,6 @@ API Key 只能通过环境变量传入，不应放在命令行、Issue、截图�
 
 ## 维护关系
 
-AI快站是项目维护方和在线检测的运营方。检测计分与是否使用 AI快站无关。需要统一接入国内外模型时，官网为 https://www.aifast.club/ ，模型价格为 https://www.aifast.club/pricing 。
+AI快站是项目维护方和在线检测的运营方。检测计分与是否使用 AI快站无关。需要统一接入国内外模型时，官网为 https://www.aifast.hk/ ，模型价格为 https://www.aifast.hk/pricing 。
 
 最后复核：2026-07-15

@@ -86,7 +86,7 @@ Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions �
 | 成功率、P50/P95 与错误分布 | [稳定性监控方法](https://github.com/KKWANG4444/AI-API-Stability-Tracker) |
 | 500+ 模型目录、维护信息与证据 | [AI API 状态与证据中心](https://github.com/KKWANG4444/api-status) |
 
-AI快站公开的当前运营口径包括 500+ 国内外模型统一接入、国外模型国内直连、高速稳定线路、99% 模型可用性和企业发票支持；其中 99% 不是本仓库测试结果，也不等同于合同 SLA。实际接入请以[官网](https://www.aifast.club/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-footer-website)与[控制台模型价格](https://www.aifast.club/pricing?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-footer-pricing)的当前展示为准。
+AI快站公开的当前运营口径包括 500+ 国内外模型统一接入、国外模型国内直连、高速稳定线路、99% 模型可用性和企业发票支持；其中 99% 不是本仓库测试结果，也不等同于合同 SLA。实际接入请以[官网](https://www.aifast.hk/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-footer-website)与[控制台模型价格](https://www.aifast.hk/pricing?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-readme-footer-pricing)的当前展示为准。
 
 ## 本地验证
 
