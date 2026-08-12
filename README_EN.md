@@ -6,6 +6,14 @@ This repository publishes selected protocol checks, report schemas, examples, an
 
 > The checker is maintained by AIFast, but its scoring rules are provider-neutral. It is not an OpenAI, Anthropic, Google, DeepSeek, or model-vendor certification. A result describes protocol behavior, visible metadata, token fields, and sampled responses at one point in time. It cannot independently prove model identity or rule out capability degradation, impersonation, or dynamic routing.
 
+## Choose the fastest path
+
+- **First API call:** [Create an AIFast account](https://www.aifast.hk/register?channel=c_uoqg7aoy&utm_source=github&utm_medium=repository&utm_campaign=overseas_acquisition&utm_content=api-check-readme-register), create a low-limit key, query `/v1/models`, and send one short request.
+- **Gateway verification:** [Run the browser-based check](https://docs.aifast.hk/en/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model_check_conversion&utm_content=api-check-readme-primary) before trusting a provider with production traffic.
+- **Tool integration:** Read the [Codex setup guide](https://docs.aifast.hk/en/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=api-check-readme-codex) or the [OpenAI-compatible migration guide](https://docs.aifast.hk/en/guides/openai-compatible-api/?utm_source=github&utm_medium=repository&utm_campaign=developer_acquisition&utm_content=api-check-readme-migration).
+
+The checker is deliberately vendor-neutral. A passing report is a compatibility and risk signal, not proof of model identity, uptime, pricing, or a vendor certification.
+
 ## Use the Website
 
 [Run the browser-based LLM API gateway check](https://docs.aifast.hk/en/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-primary)
