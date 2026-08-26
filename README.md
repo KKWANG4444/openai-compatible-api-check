@@ -133,6 +133,14 @@ jobs:
 
 首次接入可先用[浏览器在线检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=readme-action-section)确认 Base URL 和模型 ID，再把稳定的验收参数放进 CI。
 
+## 相关技术资源
+
+- [AI快站开发者中心](https://github.com/KKWANG4444/aifast-developer-hub)：迁移、排错与客户端配置总入口。
+- [AI API Stability Tracker](https://github.com/KKWANG4444/AI-API-Stability-Tracker)：把多次请求汇总为成功率、P50/P95 和错误分布。
+- [模型状态与证据中心](https://github.com/KKWANG4444/api-status)：状态页、兼容性页面与机器可读证据。
+
+> ⭐ 如果这个 CI 验收工具帮到了你，欢迎给仓库点个 Star。
+
 ## 许可证
 
 MIT
