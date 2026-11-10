@@ -1,54 +1,36 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
-import { isIP } from 'node:net';
+import { BlockList, isIP } from 'node:net';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 
 const WEB_CHECK_URL = 'https://docs.aifast.hk/model-check/';
 const REPORT_SCHEMA_URL = 'https://raw.githubusercontent.com/KKWANG4444/openai-compatible-api-check/main/schema/report.schema.json';
 const MIN_TIMEOUT_MS = 1_000;
 const MAX_TIMEOUT_MS = 120_000;
 
-function isPublicIpv4(address) {
-  const octets = address.split('.').map(Number);
-  if (octets.length !== 4 || octets.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) return false;
-  const [a, b, c] = octets;
-  return !(
-    a === 0
-    || a === 10
-    || a === 127
-    || (a === 100 && b >= 64 && b <= 127)
-    || (a === 169 && b === 254)
-    || (a === 172 && b >= 16 && b <= 31)
-    || (a === 192 && b === 0 && c === 0)
-    || (a === 192 && b === 0 && c === 2)
-    || (a === 192 && b === 168)
-    || (a === 198 && (b === 18 || b === 19))
-    || (a === 198 && b === 51 && c === 100)
-    || (a === 203 && b === 0 && c === 113)
-    || a >= 224
-  );
-}
+// BlockList 使用二进制地址比较，同时覆盖点分、十六进制和展开的 IPv4 映射地址。
+const blockedAddresses = new BlockList();
+for (const [address, prefix] of [
+  ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8],
+  ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.0.2.0', 24],
+  ['192.88.99.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15],
+  ['198.51.100.0', 24], ['203.0.113.0', 24], ['224.0.0.0', 3],
+]) blockedAddresses.addSubnet(address, prefix, 'ipv4');
+for (const [address, prefix] of [
+  ['2001::', 23], ['2001:db8::', 32], ['2002::', 16], ['3fff::', 20],
+]) blockedAddresses.addSubnet(address, prefix, 'ipv6');
+const publicIpv6Ranges = new BlockList();
+publicIpv6Ranges.addSubnet('2000::', 3, 'ipv6');
+publicIpv6Ranges.addSubnet('::ffff:0:0', 96, 'ipv6');
 
 function isPublicIpAddress(address) {
-  const normalized = String(address ?? '').replace(/^\[|\]$/g, '').split('%')[0].toLowerCase();
+  const normalized = String(address ?? '').replace(/^\[|\]$/g, '').toLowerCase();
+  if (normalized.includes('%')) return false;
   const version = isIP(normalized);
-  if (version === 4) return isPublicIpv4(normalized);
-  if (version !== 6) return false;
-
-  const mappedIpv4 = normalized.match(/(?:^|:)ffff:(\d+\.\d+\.\d+\.\d+)$/)?.[1];
-  if (mappedIpv4) return isPublicIpv4(mappedIpv4);
-
-  return !(
-    normalized === '::'
-    || normalized === '::1'
-    || normalized.startsWith('fc')
-    || normalized.startsWith('fd')
-    || /^fe[89ab]/.test(normalized)
-    || /^fe[cdef]/.test(normalized)
-    || normalized.startsWith('ff')
-    || normalized.startsWith('100:')
-    || normalized.startsWith('2001:2:')
-    || normalized.startsWith('2001:db8:')
-  );
+  if (version === 4) return !blockedAddresses.check(normalized, 'ipv4');
+  return version === 6 && publicIpv6Ranges.check(normalized, 'ipv6')
+    && !blockedAddresses.check(normalized, 'ipv6');
 }
 
 function isPrivateHostname(hostname) {
@@ -78,6 +60,26 @@ async function assertPublicHostname(hostname, resolve = lookup) {
   }
 }
 
+function createPublicLookup(resolve = lookup) {
+  return (hostname, options, callback) => {
+    if (isPrivateHostname(hostname)) {
+      callback(new Error('Base URL 必须指向公网地址'));
+      return;
+    }
+    // 将此次连接实际使用的解析结果交回 socket，不再另做一次未校验的 DNS 查询。
+    resolve(hostname, { ...options, all: true, verbatim: true }).then((records) => {
+      if (!records.length || records.some(({ address, family }) => !isPublicIpAddress(address) || isIP(address) !== family)) {
+        throw new Error('Base URL 域名解析到了私网或保留地址');
+      }
+      return records;
+    }).then((records) => {
+      if (options.all) callback(null, records);
+      else callback(null, records[0].address, records[0].family);
+    }, (error) => callback(error));
+  };
+}
+const publicLookup = createPublicLookup();
+
 function normalizeBaseUrl(value, allowInsecureLocalhost = false) {
   let url;
   try {
@@ -88,13 +90,14 @@ function normalizeBaseUrl(value, allowInsecureLocalhost = false) {
 
   const hostname = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
   const isLocalhost = ['127.0.0.1', 'localhost', '::1'].includes(hostname);
-  if (url.protocol !== 'https:' && !(allowInsecureLocalhost && isLocalhost)) {
+  const allowLocal = allowInsecureLocalhost && isLocalhost;
+  if (url.protocol !== 'https:' && !(allowLocal && url.protocol === 'http:')) {
     throw new Error('Base URL 必须使用 HTTPS');
   }
   if (url.username || url.password || url.search || url.hash) {
     throw new Error('Base URL 不能包含账号、密码、查询参数或片段');
   }
-  if (!allowInsecureLocalhost && isPrivateHostname(hostname)) {
+  if (!allowLocal && isPrivateHostname(hostname)) {
     throw new Error('Base URL 必须指向公网地址');
   }
   return url.toString().replace(/\/$/, '');
@@ -130,23 +133,42 @@ function markdownInline(value) {
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g, '');
 }
 
-async function requestJson(url, options, timeoutMs) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+async function requestJson(url, options, timeoutMs, allowLocal = false) {
   const startedAt = Date.now();
   try {
-    const response = await fetch(url, { ...options, redirect: 'error', signal: controller.signal });
-    const text = await response.text();
+    const { response, text } = await new Promise((resolve, reject) => {
+      const target = new URL(url);
+      const request = target.protocol === 'https:' ? httpsRequest : httpRequest;
+      let timer;
+      const req = request(target, {
+        method: options.method, headers: options.headers, agent: false,
+        lookup: allowLocal ? undefined : publicLookup,
+      }, (response) => {
+        const chunks = [];
+        let size = 0;
+        response.on('data', (chunk) => {
+          size += chunk.length;
+          if (size > 8 * 1024 * 1024) req.destroy(new Error('响应超过 8 MiB 限制'));
+          else chunks.push(chunk);
+        });
+        response.on('error', (error) => { clearTimeout(timer); reject(error); });
+        response.on('end', () => { clearTimeout(timer); resolve({ response, text: Buffer.concat(chunks).toString('utf8') }); });
+      });
+      req.on('error', (error) => { clearTimeout(timer); reject(error); });
+      timer = setTimeout(() => req.destroy(new Error('请求超时')), timeoutMs);
+      req.end(options.body);
+    });
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch {}
+    const ok = response.statusCode >= 200 && response.statusCode < 300;
     return {
-      ok: response.ok,
-      status: response.status,
+      ok,
+      status: response.statusCode,
       durationMs: Date.now() - startedAt,
-      requestId: response.headers.get('x-request-id') || response.headers.get('request-id'),
-      contentType: response.headers.get('content-type'),
+      requestId: response.headers['x-request-id'] || response.headers['request-id'] || null,
+      contentType: response.headers['content-type'] || null,
       data,
-      error: response.ok ? null : String(data?.error?.message || text || response.statusText).slice(0, 240),
+      error: ok ? null : String(data?.error?.message || text || response.statusMessage).slice(0, 240),
     };
   } catch (error) {
     return {
@@ -156,10 +178,8 @@ async function requestJson(url, options, timeoutMs) {
       requestId: null,
       contentType: null,
       data: null,
-      error: error instanceof Error && error.name === 'AbortError' ? '请求超时' : String(error),
+      error: String(error),
     };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -281,7 +301,8 @@ export async function runCheck({
   }
 
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl, allowInsecureLocalhost);
-  if (!allowInsecureLocalhost) {
+  const allowLocal = allowInsecureLocalhost && ['127.0.0.1', 'localhost', '::1'].includes(new URL(normalizedBaseUrl).hostname.replace(/^\[|\]$/g, ''));
+  if (!allowLocal) {
     await assertPublicHostname(new URL(normalizedBaseUrl).hostname);
   }
   const authorization = { Authorization: `Bearer ${normalizedApiKey}` };
@@ -291,7 +312,7 @@ export async function runCheck({
   const models = await requestJson(endpoint(normalizedBaseUrl, '/models'), {
     method: 'GET',
     headers: authorization,
-  }, timeoutMs);
+  }, timeoutMs, allowLocal);
   const modelIds = Array.isArray(models.data?.data)
     ? models.data.data.map((item) => item?.id).filter((id) => typeof id === 'string')
     : [];
@@ -305,7 +326,7 @@ export async function runCheck({
       max_tokens: 64,
       messages: [{ role: 'user', content: `Reply with exactly this text and nothing else: ${instructionToken}` }],
     }),
-  }, timeoutMs);
+  }, timeoutMs, allowLocal);
 
   const basicOutput = responseText(chat.data);
   const instructionPassed = basicOutput === instructionToken;
@@ -330,42 +351,49 @@ export async function runCheck({
         content: `R1 dynamic challenge: inventory starts at ${initial}, receives ${boxes} boxes with ${perBox} items each, then ships ${shipped}. Output JSON only: {"answer":integer,"nonce":"${reportNonce}"}`,
       }],
     }),
-  }, timeoutMs);
+  }, timeoutMs, allowLocal);
   const challengeJson = parseJsonObject(responseText(challenge.data));
   const challengePassed = challenge.ok
     && challengeJson?.answer === expectedAnswer
     && challengeJson?.nonce === reportNonce;
   const challengeUsage = usageFrom(challenge.data);
+  const challengeProtocol = protocolFrom(challenge.data);
+  const challengeMetadata = metadataFrom(challenge.data, requestedModel, challenge.requestId);
+  const usageValid = basicUsage.arithmeticValid && challengeUsage.arithmeticValid;
+  const totalUsage = usageValid ? {
+    input: basicUsage.input + challengeUsage.input,
+    output: basicUsage.output + challengeUsage.output,
+    total: basicUsage.total + challengeUsage.total,
+  } : { input: null, output: null, total: null };
+  const totalsValid = usageValid && Object.values(totalUsage).every(Number.isSafeInteger)
+    && totalUsage.input + totalUsage.output === totalUsage.total;
+  if (!totalsValid) Object.assign(totalUsage, { input: null, output: null, total: null });
 
   const checks = [
     { id: 'models-endpoint', name: '模型列表接口', passed: models.ok, weight: 10, detail: models.ok ? `HTTP ${models.status}` : models.error },
     { id: 'model-listed', name: '模型 ID 可发现', passed: modelIds.includes(requestedModel), weight: 5, detail: modelIds.length ? `返回 ${modelIds.length} 个模型` : '未获得可用模型列表' },
-    { id: 'chat-completions', name: 'Chat Completions 调用', passed: chat.ok, weight: 15, detail: chat.ok ? `HTTP ${chat.status}，${chat.durationMs} ms` : chat.error },
-    { id: 'protocol', name: '协议层合规', passed: protocol.passed, weight: 15, detail: `关键结构字段 ${protocol.passedCount}/${protocol.totalCount}` },
+    { id: 'chat-completions', name: 'Chat Completions 调用', passed: chat.ok && challenge.ok, weight: 15, detail: `首次 HTTP ${chat.status}，${chat.error || `${chat.durationMs} ms`}；动态题 HTTP ${challenge.status}，${challenge.error || `${challenge.durationMs} ms`}` },
+    { id: 'protocol', name: '协议层合规', passed: protocol.passed && challengeProtocol.passed, weight: 15, detail: `首次关键字段 ${protocol.passedCount}/${protocol.totalCount}；动态题 ${challengeProtocol.passedCount}/${challengeProtocol.totalCount}` },
     { id: 'instruction-following', name: '固定指令遵循', passed: instructionPassed, weight: 15, detail: instructionPassed ? '随机字符串原样返回' : '返回内容与随机字符串不一致' },
-    { id: 'metadata', name: '元数据指纹', passed: metadata.available >= 4, weight: 10, detail: `可核对元数据 ${metadata.available}/${metadata.total}` },
-    { id: 'model-claim', name: '响应模型声明一致', passed: metadata.exactModel, weight: 10, detail: metadata.responseModel ? `响应 model: ${metadata.responseModel}` : '响应未提供 model 字段' },
-    { id: 'usage', name: '计费 Token 字段', passed: basicUsage.arithmeticValid, weight: 10, detail: basicUsage.arithmeticValid ? `输入 ${basicUsage.input} + 输出 ${basicUsage.output} = 总计 ${basicUsage.total}` : basicUsage.present ? 'usage 字段不完整或算术不一致' : '未返回可核对的 usage 字段' },
+    { id: 'metadata', name: '元数据指纹', passed: metadata.available >= 4 && challengeMetadata.available >= 4, weight: 10, detail: `首次元数据 ${metadata.available}/${metadata.total}；动态题 ${challengeMetadata.available}/${challengeMetadata.total}` },
+    { id: 'model-claim', name: '响应模型声明一致', passed: metadata.exactModel && challengeMetadata.exactModel, weight: 10, detail: `首次 model: ${metadata.responseModel ?? '未返回'}；动态题 model: ${challengeMetadata.responseModel ?? '未返回'}` },
+    { id: 'usage', name: '计费 Token 字段', passed: totalsValid, weight: 10, detail: totalsValid ? `两次均通过，合计输入 ${totalUsage.input} + 输出 ${totalUsage.output} = 总计 ${totalUsage.total}` : `首次 usage ${basicUsage.arithmeticValid ? '通过' : '缺失或算术错误'}；动态题 usage ${challengeUsage.arithmeticValid ? '通过' : '缺失或算术错误'}；汇总不可用` },
     { id: 'dynamic-challenge', name: 'R1 动态题', passed: challengePassed, weight: 10, detail: challengePassed ? '随机多步计算与 nonce 均通过' : challenge.ok ? '答案或 nonce 未通过精确校验' : challenge.error },
   ];
   const score = checks.reduce((total, check) => total + (check.passed ? check.weight : 0), 0);
-  const totalUsage = {
-    input: basicUsage.input !== null && challengeUsage.input !== null ? basicUsage.input + challengeUsage.input : null,
-    output: basicUsage.output !== null && challengeUsage.output !== null ? basicUsage.output + challengeUsage.output : null,
-    total: basicUsage.total !== null && challengeUsage.total !== null ? basicUsage.total + challengeUsage.total : null,
-  };
+  const ok = requiredChecksPassed(checks);
   const report = {
     $schema: REPORT_SCHEMA_URL,
     schemaVersion: 2,
     reportId: `aifast-check-${reportNonce}`,
-    generator: { name: 'openai-compatible-api-check', version: '1.0.5', mode: 'quick' },
-    ok: requiredChecksPassed(checks),
+    generator: { name: 'openai-compatible-api-check', version: '1.0.6', mode: 'quick' },
+    ok,
     checkedAt: new Date().toISOString(),
     baseUrl: normalizedBaseUrl,
     requestedModel,
     responseModel: metadata.responseModel,
     score,
-    verdict: scoreVerdict(score),
+    verdict: ok ? scoreVerdict(score) : '需要排查',
     requestCount: 3,
     usage: totalUsage,
     signals: {
@@ -406,4 +434,4 @@ export function formatMarkdown(report) {
   ].join('\n');
 }
 
-export { assertPublicHostname, isPublicIpAddress, markdownInline, normalizeBaseUrl, parseJsonObject, protocolFrom, requiredChecksPassed, usageFrom };
+export { assertPublicHostname, createPublicLookup, isPublicIpAddress, markdownInline, normalizeBaseUrl, parseJsonObject, protocolFrom, requiredChecksPassed, usageFrom };

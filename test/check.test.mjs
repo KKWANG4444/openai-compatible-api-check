@@ -6,16 +6,22 @@ import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { isMainModule, main, parseArgs } from '../bin/model-api-check.mjs';
-import { assertPublicHostname, formatMarkdown, isPublicIpAddress, normalizeBaseUrl, parseJsonObject, protocolFrom, runCheck, usageFrom } from '../src/check.mjs';
+import { assertPublicHostname, createPublicLookup, formatMarkdown, isPublicIpAddress, normalizeBaseUrl, parseJsonObject, protocolFrom, runCheck, usageFrom } from '../src/check.mjs';
 
 const apiKey = 'test-secret-key-that-must-never-appear';
 const model = 'test-model-v1';
-const specialModels = ['nonce-mismatch', 'negative-usage', 'usage-mismatch', 'challenge-mismatch', 'markdown-injection', 'secret-echo'];
+const specialModels = ['nonce-mismatch', 'negative-usage', 'usage-mismatch', 'challenge-mismatch', 'markdown-injection', 'secret-echo', 'second-usage', 'second-negative', 'second-missing-usage', 'second-model', 'second-protocol', 'second-metadata', 'second-http', 'usage-overflow', 'redirect', 'timeout', 'oversized'];
+let redirectHits = 0;
 let server;
 let baseUrl;
 
 before(async () => {
   server = createServer(async (request, response) => {
+    if (request.url === '/redirect-target') {
+      redirectHits += 1;
+      response.writeHead(500).end();
+      return;
+    }
     if (request.headers.authorization !== `Bearer ${apiKey}`) {
       response.writeHead(401, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({ error: { message: 'unauthorized' } }));
@@ -35,6 +41,18 @@ before(async () => {
       const payload = JSON.parse(body);
       const prompt = payload.messages[0].content;
       const requestedModel = payload.model;
+      const isChallenge = prompt.startsWith('R1 dynamic challenge:');
+
+      if (requestedModel === 'redirect') {
+        response.writeHead(307, { Location: '/redirect-target' }).end();
+        return;
+      }
+      if (requestedModel === 'timeout') return;
+      if (requestedModel === 'oversized') {
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end('x'.repeat(8 * 1024 * 1024 + 1));
+        return;
+      }
 
       if (requestedModel === 'secret-echo') {
         response.writeHead(500, { 'Content-Type': 'application/json' });
@@ -47,7 +65,7 @@ before(async () => {
       }
 
       let content;
-      if (prompt.startsWith('R1 dynamic challenge:')) {
+      if (isChallenge) {
         const values = prompt.match(/starts at (\d+), receives (\d+) boxes with (\d+) items each, then ships (\d+)/)?.slice(1).map(Number);
         const challengeNonce = prompt.match(/"nonce":"([a-f0-9]+)"/)?.[1];
         const answer = values ? values[0] + values[1] * values[2] - values[3] : null;
@@ -60,8 +78,8 @@ before(async () => {
         content = requestedModel === 'nonce-mismatch' ? 'wrong-output' : nonce;
       }
 
-      response.writeHead(200, { 'Content-Type': 'application/json', 'X-Request-Id': 'req_test_123' });
-      response.end(JSON.stringify({
+      response.writeHead(isChallenge && requestedModel === 'second-http' ? 500 : 200, { 'Content-Type': 'application/json', 'X-Request-Id': 'req_test_123' });
+      const data = {
         id: 'chatcmpl-test',
         object: 'chat.completion',
         created: 1_784_000_000,
@@ -77,7 +95,17 @@ before(async () => {
           completion_tokens: 8,
           total_tokens: requestedModel === 'negative-usage' ? -1 : requestedModel === 'usage-mismatch' ? 31 : 28,
         },
-      }));
+      };
+      if (requestedModel === 'usage-overflow') data.usage = { prompt_tokens: Number.MAX_SAFE_INTEGER - 1, completion_tokens: 1, total_tokens: Number.MAX_SAFE_INTEGER };
+      if (isChallenge) {
+        if (requestedModel === 'second-usage') data.usage.total_tokens = 999;
+        if (requestedModel === 'second-negative') data.usage.total_tokens = -1;
+        if (requestedModel === 'second-missing-usage') delete data.usage;
+        if (requestedModel === 'second-model') data.model = 'wrong-model';
+        if (requestedModel === 'second-protocol') { delete data.object; delete data.created; }
+        if (requestedModel === 'second-metadata') { delete data.id; delete data.model; }
+      }
+      response.end(JSON.stringify(data));
       return;
     }
     response.writeHead(404).end();
@@ -98,7 +126,7 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(report.verdict, '兼容良好');
   assert.equal(report.responseModel, model);
   assert.equal(report.schemaVersion, 2);
-  assert.equal(report.generator.version, '1.0.5');
+  assert.equal(report.generator.version, '1.0.6');
   assert.equal(report.requestCount, 3);
   assert.equal(report.usage.total, 56);
   assert.equal(report.signals.systemFingerprint, 'fp_test');
@@ -143,6 +171,40 @@ test('R1 动态题答案错误时整体判定失败', async () => {
   assert.equal(report.checks.find((check) => check.id === 'instruction-following')?.passed, true);
   assert.equal(report.checks.find((check) => check.id === 'dynamic-challenge')?.passed, false);
   assert.equal(report.ok, false);
+});
+
+for (const [model, checkId] of [
+  ['second-usage', 'usage'], ['second-negative', 'usage'], ['second-missing-usage', 'usage'],
+  ['second-model', 'model-claim'], ['second-protocol', 'protocol'], ['second-metadata', 'metadata'],
+  ['second-http', 'chat-completions'], ['usage-overflow', 'usage'],
+]) {
+  test(`第二次响应或汇总异常不能通过：${model}`, async () => {
+    const report = await runCheck({ baseUrl, model, apiKey, allowInsecureLocalhost: true });
+    assert.equal(report.ok, false);
+    assert.equal(report.verdict, '需要排查');
+    assert.ok(report.score < 100);
+    assert.equal(report.checks.find(check => check.id === checkId).passed, false);
+    if (checkId === 'usage') assert.deepEqual(report.usage, { input: null, output: null, total: null });
+  });
+}
+
+test('拒绝跟随重定向且不向目标发送凭据', async () => {
+  const report = await runCheck({ baseUrl, model: 'redirect', apiKey, allowInsecureLocalhost: true });
+  assert.equal(report.ok, false);
+  assert.equal(redirectHits, 0);
+  assert.match(report.checks.find(check => check.id === 'chat-completions').detail, /307/);
+});
+
+test('网络超时会终止请求并生成失败报告', async () => {
+  const report = await runCheck({ baseUrl, model: 'timeout', apiKey, timeoutMs: 1000, allowInsecureLocalhost: true });
+  assert.equal(report.ok, false);
+  assert.match(report.checks.find(check => check.id === 'chat-completions').detail, /请求超时/);
+});
+
+test('超过响应上限会中止读取且不能通过', async () => {
+  const report = await runCheck({ baseUrl, model: 'oversized', apiKey, allowInsecureLocalhost: true });
+  assert.equal(report.ok, false);
+  assert.match(report.checks.find(check => check.id === 'chat-completions').detail, /8 MiB/);
 });
 
 test('协议与 usage 辅助函数严格核对结构和算术', () => {
@@ -202,6 +264,44 @@ test('公网 IP 分类覆盖 IPv4、IPv6 和 IPv4-mapped IPv6', () => {
   assert.equal(isPublicIpAddress('169.254.1.1'), false);
   assert.equal(isPublicIpAddress('2001:db8::1'), false);
   assert.equal(isPublicIpAddress('::ffff:127.0.0.1'), false);
+  for (const address of ['::ffff:7f00:1', '0:0:0:0:0:ffff:0a00:0001', '::ffff:a9fe:a9fe', '0:0:0:0:0:0:0:1', '2001:0db8:0:0::1', '64:ff9b::a00:1', '2002:0a00:0001::1', 'fe80::1%en0']) {
+    assert.equal(isPublicIpAddress(address), false, address);
+  }
+  for (const address of ['::ffff:808:808', '0:0:0:0:0:ffff:8.8.8.8', '2001:4860:4860::8888']) {
+    assert.equal(isPublicIpAddress(address), true, address);
+  }
+});
+
+test('完整检测入口拒绝规范化后的映射私网地址，不触发请求', async () => {
+  for (const address of ['::ffff:127.0.0.1', '::ffff:10.0.0.1', '::ffff:169.254.169.254', '0:0:0:0:0:ffff:7f00:1']) {
+    await assert.rejects(runCheck({ baseUrl: `https://[${address}]/v1`, model, apiKey }), /公网地址/);
+  }
+  assert.throws(() => normalizeBaseUrl('https://10.0.0.1/v1', true), /公网地址/);
+  assert.throws(() => normalizeBaseUrl('ftp://localhost/v1', true), /HTTPS/);
+});
+
+test('连接时只使用同次已校验的 DNS 地址并拒绝重新绑定到私网', async () => {
+  let calls = 0;
+  const guarded = createPublicLookup(async () => {
+    calls += 1;
+    return calls === 1 ? [{ address: '8.8.8.8', family: 4 }] : [{ address: '::ffff:7f00:1', family: 6 }];
+  });
+  const resolve = () => new Promise((resolve, reject) => guarded('gateway.example', { all: true }, (error, result) => error ? reject(error) : resolve(result)));
+  assert.deepEqual(await resolve(), [{ address: '8.8.8.8', family: 4 }]);
+  await assert.rejects(resolve(), /私网或保留地址/);
+  assert.equal(calls, 2);
+});
+
+test('连接解析兼容单地址回调，并拒绝混合和空结果', async () => {
+  const guarded = createPublicLookup(async () => [{ address: '2606:4700:4700::1111', family: 6 }]);
+  await new Promise((resolve, reject) => guarded('gateway.example', {}, (error, address, family) => {
+    if (error) return reject(error);
+    assert.equal(address, '2606:4700:4700::1111'); assert.equal(family, 6); resolve();
+  }));
+  for (const records of [[], [{ address: '8.8.8.8', family: 4 }, { address: '10.0.0.1', family: 4 }]]) {
+    const lookup = createPublicLookup(async () => records);
+    await assert.rejects(new Promise((resolve, reject) => lookup('gateway.example', { all: true }, (error, addresses) => error ? reject(error) : resolve(addresses))), /私网或保留地址/);
+  }
 });
 
 test('域名解析结果包含私网地址时拒绝检测', async () => {
@@ -261,7 +361,7 @@ test('CLI 支持版本参数', async () => {
     stderr: { write: () => {} },
   });
   assert.equal(status, 0);
-  assert.equal(stdout, '1.0.5\n');
+  assert.equal(stdout, '1.0.6\n');
 });
 
 test('CLI 通过符号链接启动时仍能识别主模块', async () => {
