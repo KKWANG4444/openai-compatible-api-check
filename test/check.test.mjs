@@ -10,7 +10,7 @@ import { assertPublicHostname, createPublicLookup, formatMarkdown, isPublicIpAdd
 
 const apiKey = 'test-secret-key-that-must-never-appear';
 const model = 'test-model-v1';
-const specialModels = ['nonce-mismatch', 'negative-usage', 'usage-mismatch', 'challenge-mismatch', 'markdown-injection', 'secret-echo', 'second-usage', 'second-negative', 'second-missing-usage', 'second-model', 'second-protocol', 'second-metadata', 'second-http', 'usage-overflow', 'redirect', 'timeout'];
+const specialModels = ['nonce-mismatch', 'negative-usage', 'usage-mismatch', 'challenge-mismatch', 'markdown-injection', 'secret-echo', 'second-usage', 'second-negative', 'second-missing-usage', 'second-model', 'second-protocol', 'second-metadata', 'second-http', 'usage-overflow', 'redirect', 'timeout', 'oversized'];
 let redirectHits = 0;
 let server;
 let baseUrl;
@@ -48,6 +48,11 @@ before(async () => {
         return;
       }
       if (requestedModel === 'timeout') return;
+      if (requestedModel === 'oversized') {
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end('x'.repeat(8 * 1024 * 1024 + 1));
+        return;
+      }
 
       if (requestedModel === 'secret-echo') {
         response.writeHead(500, { 'Content-Type': 'application/json' });
@@ -194,6 +199,12 @@ test('网络超时会终止请求并生成失败报告', async () => {
   const report = await runCheck({ baseUrl, model: 'timeout', apiKey, timeoutMs: 1000, allowInsecureLocalhost: true });
   assert.equal(report.ok, false);
   assert.match(report.checks.find(check => check.id === 'chat-completions').detail, /请求超时/);
+});
+
+test('超过响应上限会中止读取且不能通过', async () => {
+  const report = await runCheck({ baseUrl, model: 'oversized', apiKey, allowInsecureLocalhost: true });
+  assert.equal(report.ok, false);
+  assert.match(report.checks.find(check => check.id === 'chat-completions').detail, /8 MiB/);
 });
 
 test('协议与 usage 辅助函数严格核对结构和算术', () => {
