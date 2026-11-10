@@ -30,7 +30,11 @@ if (!validateReport(example)) {
   fail(`示例报告不符合 Schema：${ajv.errorsText(validateReport.errors, { separator: '；' })}`);
 }
 
-if (example.schemaVersion !== 2 || example.generator?.version !== '1.0.4') fail('示例报告版本错误');
+const packageInfo = await readJson('../package.json');
+if (example.schemaVersion !== 2 || example.generator?.version !== packageInfo.version) fail('示例报告版本与发布版本不一致');
+for (const content of [readme, readmeEn]) {
+  if (!content.includes(`KKWANG4444/openai-compatible-api-check@v${packageInfo.version}`)) fail('Action 示例未固定当前补丁版本');
+}
 if (example.$schema !== schema.$id) fail('示例报告未指向当前 Schema');
 if (!Array.isArray(example.checks) || example.checks.length !== 9) fail('示例报告必须包含 9 项检查');
 
@@ -63,7 +67,11 @@ const requiredUrls = [
 ];
 for (const [name, content] of Object.entries({ readme, readmeEn, methodology, reportSchema, llms, llmsFull })) {
   if (!content.trim()) fail(`${name} 为空`);
+  if (/aifast\.(?:club|link)/i.test(content)) fail(`${name} 混入其他站点入口`);
 }
+const checkerSource = await readText('../src/check.mjs');
+if (/aifast\.(?:club|link)/i.test(checkerSource)) fail('工具输出仍包含其他站点入口');
+if (!checkerSource.includes('https://docs.aifast.hk/model-check/')) fail('工具输出缺少 HK 检测入口');
 if (!readmeEn.includes('https://docs.aifast.hk/en/model-check/')) fail('英文 README 缺少英文在线检测入口');
 if (!readmeEn.includes('https://docs.aifast.hk/en/payment/') || !readmeEn.includes('utm_campaign=international-payment')) {
   fail('英文 README 缺少国际支付与账户设置入口');

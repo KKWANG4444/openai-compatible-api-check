@@ -39,6 +39,10 @@ Codex custom providers use the Responses API and are outside the current Chat Co
 
 The online website performs additional checks, including output-style observations, knowledge-boundary prompts, SSE, and tool calls. Neither mode is a vendor identity certificate.
 
+## Versioned GitHub Action
+
+Use `KKWANG4444/openai-compatible-api-check@v1.0.5` for a fixed patch release, or pin the full commit SHA. The `v1` alias follows verified patch releases. This patch aligns report links with the HK site and refreshes a development validation dependency; it does not change scoring or request protocols. See the [workflow example](README.md#在-github-actions-持续验收) and keep API keys in GitHub Secrets.
+
 ## Reproducible Artifacts
 
 - [Methodology](docs/methodology.md)

@@ -98,13 +98,15 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(report.verdict, '兼容良好');
   assert.equal(report.responseModel, model);
   assert.equal(report.schemaVersion, 2);
-  assert.equal(report.generator.version, '1.0.4');
+  assert.equal(report.generator.version, '1.0.5');
   assert.equal(report.requestCount, 3);
   assert.equal(report.usage.total, 56);
   assert.equal(report.signals.systemFingerprint, 'fp_test');
   assert.equal(report.checks.find((check) => check.id === 'dynamic-challenge')?.passed, true);
   assert.equal(JSON.stringify(report).includes(apiKey), false);
   assert.equal(formatMarkdown(report).includes(apiKey), false);
+  assert.equal(formatMarkdown(report).includes('https://docs.aifast.hk/model-check/'), true);
+  assert.doesNotMatch(formatMarkdown(report), /aifast\.(?:club|link)/i);
 });
 
 test('恶意上游回显 API Key 时 JSON 和 Markdown 均脱敏', async () => {
@@ -259,7 +261,7 @@ test('CLI 支持版本参数', async () => {
     stderr: { write: () => {} },
   });
   assert.equal(status, 0);
-  assert.equal(stdout, '1.0.4\n');
+  assert.equal(stdout, '1.0.5\n');
 });
 
 test('CLI 通过符号链接启动时仍能识别主模块', async () => {
