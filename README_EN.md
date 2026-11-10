@@ -41,7 +41,7 @@ The online website performs additional checks, including output-style observatio
 
 ## Versioned GitHub Action
 
-Use `KKWANG4444/openai-compatible-api-check@v1.0.5` for a fixed patch release, or pin the full commit SHA. The `v1` alias follows verified patch releases. This patch aligns report links with the HK site and refreshes a development validation dependency; it does not change scoring or request protocols. See the [workflow example](README.md#在-github-actions-持续验收) and keep API keys in GitHub Secrets.
+Use `KKWANG4444/openai-compatible-api-check@v1.0.6` for a fixed patch release, or pin the full commit SHA. The `v1` alias follows verified patch releases. This patch fixes private IPv4-mapped IPv6 validation and checks protocol, model declarations and token arithmetic in both generation responses. Any required failure produces a failed verdict; invalid or overflowing token counts are not aggregated. The nine weights, report fields and request count remain unchanged. See the [workflow example](README.md#在-github-actions-持续验收) and keep API keys in GitHub Secrets.
 
 ## Reproducible Artifacts
 
@@ -57,6 +57,7 @@ Model declarations, system fingerprints, and request IDs may be rewritten by a g
 ## Security Boundary
 
 - Public targets must use HTTPS and resolve to public network addresses.
+- The CLI validates IPv4-mapped IPv6 addresses and passes only validated DNS results to each connection. Redirects are not followed, TLS certificate verification stays enabled, and responses are limited to 8 MiB each.
 - URLs containing embedded credentials, query strings, or fragments are rejected.
 - Never paste an API key into an Issue, screenshot, public log, or report.
 - The checker does not bypass authentication, rate limits, or access controls.

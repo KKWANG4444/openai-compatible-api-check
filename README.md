@@ -65,6 +65,7 @@ Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions �
 
 - 公开目标只接受 HTTPS，不接受 URL 内嵌账号、密码、查询参数或片段。
 - 在线检测只接受公网可解析的 HTTPS 目标，不接受本机、私网、链路本地及保留地址。
+- CLI 使用 Node 内置地址规则识别 IPv4 映射 IPv6；每次连接仅使用同次校验过的 DNS 结果，不跟随重定向，保留 TLS 证书校验。单次响应上限为 8 MiB。
 - 不要在 Issue、截图或公开报告中提交 API Key；建议使用临时限额 Key 并在检测后撤销。
 - GitHub Docker Action会按平台要求把输入传入容器启动参数；API Key必须来自GitHub Secrets，并只在可信Runner上运行，避免将密钥直接写进工作流或共享日志。
 - 工具不会绕过认证、限流或访问控制。
@@ -116,7 +117,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check OpenAI-compatible endpoint
         id: api-check
-        uses: KKWANG4444/openai-compatible-api-check@v1.0.5
+        uses: KKWANG4444/openai-compatible-api-check@v1.0.6
         with:
           base-url: https://api.example.com/v1
           model: your-exact-model-id
@@ -131,7 +132,7 @@ jobs:
 
 协议检测执行完成但有必检项未通过时，步骤返回非零状态，工作流会变红；此时脱敏后的 Markdown 报告会写入 Job Summary，也可以作为 Artifact 保存。若在参数校验或DNS解析阶段提前终止，则不会生成检测报告，错误原因会直接显示在步骤日志中。Action 不接受命令行明文密钥，报告生成前会对上游回显的密钥做替换。
 
-示例固定到 `v1.0.5`，便于复现；`v1` 是跟随已验收补丁的主版本别名。生产工作流也可以固定完整提交 SHA。该版本统一使用 HK 报告入口并更新开发校验依赖，不改变检测评分、请求协议或收费规则。
+示例固定到 `v1.0.6`，便于复现；`v1` 是跟随已验收补丁的主版本别名。生产工作流也可以固定完整提交 SHA。本补丁修复映射 IPv6 私网校验和第二次生成响应漏检；两次响应均核对协议、模型声明和 Token，任何必检项失败都显示“需要排查”，错误或溢出的 Token 不进入汇总。九项权重、报告字段和请求次数不变，不修改网站收费规则。
 
 首次接入可先用[浏览器在线检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=readme-action-section)确认 Base URL 和模型 ID，再把稳定的验收参数放进 CI。
 
