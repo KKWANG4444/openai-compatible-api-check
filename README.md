@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check OpenAI-compatible endpoint
         id: api-check
-        uses: KKWANG4444/openai-compatible-api-check@v1
+        uses: KKWANG4444/openai-compatible-api-check@v1.0.5
         with:
           base-url: https://api.example.com/v1
           model: your-exact-model-id
@@ -130,6 +130,8 @@ jobs:
 ```
 
 协议检测执行完成但有必检项未通过时，步骤返回非零状态，工作流会变红；此时脱敏后的 Markdown 报告会写入 Job Summary，也可以作为 Artifact 保存。若在参数校验或DNS解析阶段提前终止，则不会生成检测报告，错误原因会直接显示在步骤日志中。Action 不接受命令行明文密钥，报告生成前会对上游回显的密钥做替换。
+
+示例固定到 `v1.0.5`，便于复现；`v1` 是跟随已验收补丁的主版本别名。生产工作流也可以固定完整提交 SHA。该版本统一使用 HK 报告入口并更新开发校验依赖，不改变检测评分、请求协议或收费规则。
 
 首次接入可先用[浏览器在线检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=readme-action-section)确认 Base URL 和模型 ID，再把稳定的验收参数放进 CI。
 
