@@ -14,6 +14,14 @@
 
 > 本工具由 AI快站维护，但检测计分与服务商无关。它不是 OpenAI、Anthropic、Google、DeepSeek 或其他模型厂商认证；结果只能描述检测时点的接口协议、可见元数据、Token 字段与行为样本，不能单独证明底层模型身份，也不能排除降智、套壳或动态路由。
 
+## Gemini 4 Hydrogen / Carbon 接入更新（2026-11-17）
+
+HK [上架公告](https://www.aifast.hk/api/announcements)已发布 `gemini-4-hydrogen`（11 月 13 日）和 `gemini-4-carbon`（11 月 11 日）。2026-11-17 [公开目录](https://www.aifast.hk/api/pricing)均标记 `available=true`，声明 `gemini`、`openai` 端点类型；OpenAI-compatible Base URL 保持 `https://www.aifast.hk/v1`。
+
+检测 gemini-4-hydrogen 或 gemini-4-carbon 时仅选择 OpenAI Chat Completions 兼容端点；本工具不直接检测 Gemini 原生 generateContent，不改变计分或默认模型。 本次没有执行付费推理，目录记录不证明生成、SSE、工具调用或模型身份。
+
+[Hydrogen / Carbon 分组与接入教程](https://docs.aifast.hk/providers/gemini-api/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=aifast-model-check-kit-gemini) · [当前模型与价格](https://www.aifast.hk/pricing?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=aifast-model-check-kit-gemini-pricing)
+
 ## 直接在网站检测
 
 [立即运行大模型 API 中转站检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-readme-primary)
