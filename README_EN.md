@@ -6,6 +6,14 @@ This repository publishes selected protocol checks, report schemas, examples, an
 
 > The checker is maintained by AIFast, but its scoring rules are provider-neutral. It is not an OpenAI, Anthropic, Google, DeepSeek, or model-vendor certification. A result describes protocol behavior, visible metadata, token fields, and sampled responses at one point in time. It cannot independently prove model identity or rule out capability degradation, impersonation, or dynamic routing.
 
+## Gemini 4 Hydrogen / Carbon setup update (2026-11-17)
+
+HK [announcements](https://www.aifast.hk/api/announcements) list `gemini-4-hydrogen` (November 13) and `gemini-4-carbon` (November 11). The [public catalog](https://www.aifast.hk/api/pricing), checked on 2026-11-17, marks both as `available=true` with `gemini` and `openai` endpoint types. OpenAI-compatible Base URL: `https://www.aifast.hk/v1`.
+
+To check gemini-4-hydrogen or gemini-4-carbon, select an OpenAI Chat Completions-compatible endpoint. This tool does not directly test native Gemini generateContent; scoring and default models are unchanged. No paid inference was run; catalog records do not prove generation, SSE, tool-call support or underlying model identity.
+
+[Hydrogen / Carbon groups and setup](https://docs.aifast.hk/en/providers/gemini-api/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=aifast-model-check-kit-gemini-en) · [Current catalog and pricing](https://www.aifast.hk/pricing?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=aifast-model-check-kit-gemini-pricing-en)
+
 ## Choose the fastest path
 
 - **First API call:** [Create an AIFast account](https://www.aifast.hk/register?channel=c_uoqg7aoy&utm_source=github&utm_medium=repository&utm_campaign=overseas_acquisition&utm_content=api-check-readme-register), create a low-limit key, query `/v1/models`, and send one short request.
