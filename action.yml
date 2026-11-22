@@ -18,6 +18,10 @@ inputs:
     description: Per-request timeout in milliseconds
     required: false
     default: "30000"
+  profile:
+    description: quick or thorough; thorough adds SSE, tool-call, error-contract and latency evidence
+    required: false
+    default: quick
   report-path:
     description: Markdown report path relative to the workspace
     required: false
@@ -35,4 +39,5 @@ runs:
     - ${{ inputs.model }}
     - ${{ inputs.api-key }}
     - ${{ inputs.timeout }}
+    - ${{ inputs.profile }}
     - ${{ inputs.report-path }}

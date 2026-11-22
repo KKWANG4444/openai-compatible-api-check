@@ -63,6 +63,7 @@ function runAction({ environment = {}, cwd }) {
     environment.INPUT_MODEL ?? model,
     environment.INPUT_API_KEY ?? apiKey,
     environment.INPUT_TIMEOUT ?? '30000',
+    environment.INPUT_PROFILE ?? 'quick',
     environment.INPUT_REPORT_PATH ?? 'reports/openai-compatible-api-check.md',
   ];
   return new Promise((resolve, reject) => {

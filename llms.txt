@@ -1,6 +1,6 @@
 # OpenAI Compatible API Check
 
-> 面向任意 OpenAI Compatible HTTPS API 的开源黑盒筛查工具。CLI 用 3 次请求完成 9 项快速检查，输出可复现的 JSON Schema v2 或 Markdown 报告。
+> 面向任意 OpenAI Compatible HTTPS API 的开源黑盒筛查工具。CLI quick 用 3 次请求完成 9 项核心检查；thorough 再追加 SSE、工具调用和错误契约探测，输出可复现的 JSON Schema v2 或 Markdown 报告。
 
 维护方：AI快站
 项目仓库：https://github.com/KKWANG4444/openai-compatible-api-check
@@ -13,12 +13,13 @@ Codex Responses 与工具事件验收：https://docs.aifast.hk/troubleshooting/c
 
 核心事实：
 - CLI 快速模式发起 3 次请求，覆盖 9 个检查项。
+- CLI thorough 模式发起 6 次请求，追加 SSE 事件、工具调用结构、故意错误模型的 4xx 契约和少量延迟样本。
 - Postman 是 2 请求基础冒烟测试，不等同于完整检测。
 - 在线标准模式约 7 次请求，覆盖 10 个维度，包括 SSE 与工具调用。
 - API Key 仅从环境变量读取，报告会执行脱敏。
 - 检测是时点黑盒筛查，不是模型厂商认证，不能单独证明底层模型身份或不存在降智、套壳、动态路由。
 
-最后复核：2026-07-15
+最后复核：2026-11-23
 
 ## Gemini 新模型检测范围（2026-11-17）
 

@@ -21,7 +21,10 @@ https://github.com/KKWANG4444/openai-compatible-api-check/blob/main/docs/methodo
 
 - Postman 基础冒烟：2 次请求，适合手工检查模型列表、基础调用和随机字符串。
 - CLI 快速检测：3 次请求，适合本地、CI 和路由变更后的自动复测，输出 Schema v2 报告。
+- CLI thorough 检测：6 次请求，保留 9 项核心门禁，并追加 SSE chunk 与 `[DONE]`、工具调用 JSON 参数、故意错误模型的 4xx 结构化响应和一次性延迟样本。工具调用失败只作为高级证据，不改变核心 Chat Completions 门禁。
 - 在线标准检测：约 7 次请求，覆盖 10 个维度，追加输出风格、知识边界、SSE、工具调用等证据。入口：https://docs.aifast.hk/model-check/
+
+thorough 方法参考 vLLM 的 OpenAI 端点测试拆分、LiteLLM 对流式首包前后错误的分类，以及 SGLang 对 SSE 累积和工具调用事件的边界处理。参考源码仅用于方法复核，不代表本工具已验证这些项目的线上服务。
 
 ## 结论边界
 
@@ -37,7 +40,7 @@ API Key 只能通过环境变量传入，不应放在命令行、Issue、截图�
 
 AI快站是项目维护方和在线检测的运营方。检测计分与是否使用 AI快站无关。需要统一接入国内外模型时，官网为 https://www.aifast.hk/ ，模型价格为 https://www.aifast.hk/pricing 。
 
-最后复核：2026-07-15
+最后复核：2026-11-23
 
 ## Gemini 新模型检测范围（2026-11-17）
 

@@ -23,6 +23,7 @@ test('Docker action passes every declared input through runs.args', () => {
     '${{ inputs.model }}',
     '${{ inputs.api-key }}',
     '${{ inputs.timeout }}',
+    '${{ inputs.profile }}',
     '${{ inputs.report-path }}',
   ]);
 });

@@ -5,7 +5,8 @@ base_url="${1:-}"
 model="${2:-}"
 api_key="${3:-}"
 timeout="${4:-30000}"
-report_path="${5:-reports/openai-compatible-api-check.md}"
+profile="${5:-quick}"
+report_path="${6:-reports/openai-compatible-api-check.md}"
 
 if [ -z "$base_url" ]; then
   echo "error: input base-url is required" >&2
@@ -41,6 +42,7 @@ node "$root/bin/model-api-check.mjs" \
   --model "$model" \
   --key-env MODEL_API_CHECK_KEY \
   --timeout "$timeout" \
+  --profile "$profile" \
   --format markdown \
   --output "$absolute_report_path"
 status=$?

@@ -1,6 +1,6 @@
 # JSON 报告字段说明
 
-当前格式版本为 `schemaVersion: 2`，正式 Schema 位于 [`schema/report.schema.json`](../schema/report.schema.json)。
+当前格式版本为 `schemaVersion: 2`，正式 Schema 位于 [`schema/report.schema.json`](../schema/report.schema.json)。thorough 只增加可选字段，保留 v2 读取兼容性。
 
 ## 顶层字段
 
@@ -17,10 +17,11 @@
 | `responseModel` | string/null | 首次响应声明的模型 ID；两次声明的校验结果见 `checks` |
 | `score` | integer | 九项检查的加权分，范围 0 到 100 |
 | `verdict` | enum | 保留三种枚举；当前严格门禁任一必检项失败均为 `需要排查` |
-| `requestCount` | integer | 快速模式固定为 3 |
+| `requestCount` | integer | quick 为 3；thorough 为 6（核心 3 + 深度 3） |
 | `usage` | object | 两次 Chat Completions 的有效 Token 汇总；任次不完整、算术错误或汇总溢出时，`input`、`output`、`total` 均为 `null` |
 | `signals` | object | 首次响应的元数据及协议字段存在性，不保存完整原始响应；两次核验结果见 `checks` |
 | `checks` | array | 九项检查的结果、权重和脱敏说明 |
+| `advanced` | object，可选 | thorough 追加的 SSE、工具调用、错误契约和延迟样本；不改变核心 `ok` 门禁 |
 | `disclaimer` | string | 结论边界声明 |
 
 ## 兼容性约定

@@ -17,6 +17,7 @@ function usage() {
   --format FORMAT      markdown 或 json，默认 markdown
   --output FILE        将报告写入文件；默认输出到终端
   --timeout MS         单次请求超时，默认 30000，范围 1000-120000
+  --profile PROFILE    quick 或 thorough；thorough 追加 SSE、工具调用、错误契约和延迟样本
   -h, --help           显示帮助
   --version            显示版本
 
@@ -66,7 +67,7 @@ export async function main(
       return 0;
     }
     if (args.version) {
-      io.stdout.write('1.0.6\n');
+      io.stdout.write('1.1.0\n');
       return 0;
     }
 
@@ -82,6 +83,7 @@ export async function main(
       model: args.model,
       apiKey,
       timeoutMs: Number(args.timeout || 30_000),
+      profile: args.profile || 'quick',
       allowInsecureLocalhost: environment.MODEL_API_CHECK_ALLOW_INSECURE_LOCALHOST === '1',
     });
     const output = format === 'json' ? `${JSON.stringify(report, null, 2)}\n` : `${dependencies.formatMarkdown(report)}\n`;

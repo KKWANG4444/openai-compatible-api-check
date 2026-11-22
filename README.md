@@ -48,13 +48,30 @@ Codex 自定义 Provider 使用 Responses API，不在当前 Chat Completions �
 
 具体证据含义、计分方式和模型真伪判断边界见[检测方法论](docs/methodology.md)。
 
+## 深度检测档：thorough
+
+CLI 和 GitHub Action 新增 `thorough` 检测档。在原有 3 次请求之外，再发起 3 次低额度探测：
+
+- **SSE 流式事件**：检查 `text/event-stream`、每个 JSON chunk、delta、终止 `finish_reason` 和 `[DONE]`，识别“HTTP 200 但流被截断”的兼容问题。
+- **工具调用结构**：发送不执行外部操作的最小函数工具，核对 `tool_calls` 或兼容的 `function_call`、函数名和可解析 JSON 参数。
+- **错误响应契约**：使用随机不存在的模型 ID，要求返回 4xx 和结构化 `error.message`，避免网关静默回退到其他模型。
+
+深度报告还给出本次样本的首个 SSE 事件、p50/p95 延迟。它们是一次性证据，不是 SLA；工具调用不支持时只降低深度证据分，不会把普通 Chat Completions 判为不可用。运行方式：
+
+```bash
+model-api-check --profile thorough --base-url https://api.example.com/v1 --model MODEL_ID
+```
+
+默认 `quick` 模式保持原有 3 次请求和 9 项必检门禁，适合低成本 CI；需要审核流式和工具调用时显式使用 `thorough`。
+
 ## 网站检测与技术证据
 
 | 模式 | 请求量 | 适合场景 | 能力边界 |
 | --- | ---: | --- | --- |
-| [在线标准检测](https://docs.aifast.hk/model-check/) | 约 7 | 普通用户与开发者 | 10 个维度，包含输出风格、知识边界、SSE、工具调用等证据 |
+| [在线标准检测](https://docs.aifast.hk/model-check/) | 约 7 | 普通用户与开发者 | 交互式输出风格、知识边界、SSE、工具调用等证据 |
 | GitHub Action | 3 | 部署门禁与定时巡检 | 核对模型列表、Chat Completions、协议、Token 与动态题，失败时阻断工作流 |
-| 仓库回归测试 | 3 | 维护者审查规则 | 9 项协议与行为检查，用于防止检测逻辑回归 |
+| GitHub Action thorough | 6 | 发布前深度验收 | 9 项核心门禁 + SSE、工具调用、错误契约和延迟样本 |
+| 仓库回归测试 | 3/6 | 维护者审查规则 | quick 与 thorough 均有本机模拟回归测试 |
 
 网站结果用于兼容性与风险筛查，不是模型厂商认证。不同时间、地区、模型和参数的结果不应直接横向比较。
 
@@ -125,11 +142,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check OpenAI-compatible endpoint
         id: api-check
-        uses: KKWANG4444/openai-compatible-api-check@v1.0.6
+        uses: KKWANG4444/openai-compatible-api-check@v1.1.0
         with:
           base-url: https://api.example.com/v1
           model: your-exact-model-id
           api-key: ${{ secrets.LLM_API_KEY }}
+          profile: thorough
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -140,7 +158,7 @@ jobs:
 
 协议检测执行完成但有必检项未通过时，步骤返回非零状态，工作流会变红；此时脱敏后的 Markdown 报告会写入 Job Summary，也可以作为 Artifact 保存。若在参数校验或DNS解析阶段提前终止，则不会生成检测报告，错误原因会直接显示在步骤日志中。Action 不接受命令行明文密钥，报告生成前会对上游回显的密钥做替换。
 
-示例固定到 `v1.0.6`，便于复现；`v1` 是跟随已验收补丁的主版本别名。生产工作流也可以固定完整提交 SHA。本补丁修复映射 IPv6 私网校验和第二次生成响应漏检；两次响应均核对协议、模型声明和 Token，任何必检项失败都显示“需要排查”，错误或溢出的 Token 不进入汇总。九项权重、报告字段和请求次数不变，不修改网站收费规则。
+示例固定到 `v1.1.0`，便于复现；`v1` 是跟随已验收补丁的主版本别名。quick 模式修复映射 IPv6 私网校验和第二次生成响应漏检；thorough 模式进一步核对 SSE 终止、工具参数和错误契约。任何核心必检项失败都显示“需要排查”，错误或溢出的 Token 不进入汇总。thorough 的额外检查是能力证据，不会把不支持工具调用的服务误写成 Chat 协议完全失败。
 
 首次接入可先用[浏览器在线检测](https://docs.aifast.hk/model-check/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=readme-action-section)确认 Base URL 和模型 ID，再把稳定的验收参数放进 CI。
 

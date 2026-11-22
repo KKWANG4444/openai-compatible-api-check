@@ -2,6 +2,8 @@
 
 本文说明 `openai-compatible-api-check` 如何采集证据、如何给分，以及哪些结论不能由一次黑盒检测推出。方法复核日期：2026-11-23。
 
+本轮方法借鉴了公开的一手实现：[vLLM OpenAI 兼容端点测试目录](https://github.com/vllm-project/vllm/tree/main/tests/entrypoints/openai) 将 Chat、stream、tool calling 和 error 分开验收；[LiteLLM 的流式错误说明](https://github.com/BerriAI/litellm-docs/blob/main/docs/proxy/error_reference.md) 明确区分首个 chunk 前的 HTTP 错误与已经返回 200 后的流内错误；[SGLang 的 OpenAI 流式处理器](https://github.com/sgl-project/sglang/blob/main/sgl-model-gateway/src/routers/openai/responses/streaming.rs) 将 SSE 解析、事件累积和工具调用识别视为独立边界。这里只借鉴测试维度和失败分类，不复制服务端代码或把其他项目的实现结果当作本项目的检测结果。
+
 ## 检测对象
 
 工具检测的是一个使用 Bearer 认证、暴露 OpenAI Compatible 接口的 HTTPS Base URL。CLI 发起 3 次请求：
@@ -34,9 +36,20 @@
 | --- | ---: | --- | --- |
 | Postman 基础冒烟 | 2 | 手工接入前快速检查 | 模型列表、基础调用、随机字符串、基本字段 |
 | CLI 快速检测 | 3 | 本地、CI、变更后复测 | 9 项检查、Schema v2 JSON/Markdown 报告 |
+| CLI/GitHub Action thorough | 6 | 发布前深度验收 | 9 项核心检查 + SSE、工具调用结构、错误响应契约和延迟样本 |
 | [在线标准检测](https://docs.aifast.hk/model-check/) | 约 7 | 更完整的交互式筛查 | 10 个维度，追加输出风格、知识边界、SSE、工具调用等证据 |
 
 不同模式的分数不可直接横向比较。需要对多个服务做对比时，应固定测试时间、网络位置、模型 ID、参数和题集，并保留原始报告。
+
+### thorough 深度证据
+
+thorough 在 3 次核心请求后追加 3 次探测：
+
+1. `stream: true`：必须看到 `text/event-stream`、合法 JSON chunk、delta、终止 `finish_reason` 和 `[DONE]`。这能发现普通 JSON 正常但 SSE 截断、事件格式损坏或没有终止标志的问题。
+2. `tool_choice`：发送只包含字符串参数的最小函数，不执行外部工具；核对现代 `tool_calls` 或旧式 `function_call` 的函数名及 JSON 参数。
+3. 不存在模型：要求 4xx 和 `error.message`。如果网关把未知模型静默路由到默认模型，错误契约会失败，但不会覆盖核心协议分。
+
+深度检查结果放在报告的可选 `advanced` 字段中。工具调用不是所有模型的必备能力，所以它不会改变核心 `ok`；SSE、工具和错误契约的失败必须按具体细节排查，不能简单解释为模型不可用。
 
 ## 模型真伪与降智判断边界
 
@@ -58,6 +71,6 @@ JSON 报告遵循 [`schema/report.schema.json`](../schema/report.schema.json)，
 
 ## 目录同步记录（2026-11-23）
 
-检测器仍只验证公开 HTTPS OpenAI Compatible Chat Completions Base URL。当前目录中的 qwen4-max、gpt-6.2-astra、gpt-6.2-sol、hy4-flash、gemini-4-hydrogen、gemini-4-carbon 和 claude-fable-5-2 可作为精确模型 ID 示例，但必须先从账号实时 /models 或控制台确认。
+检测器仍只验证公开 HTTPS OpenAI Compatible Chat Completions Base URL。当前目录中的 qwen4-max、gpt-6.2-astra、gpt-6.2-sol、hy4-flash、gemini-4-hydrogen、gemini-4-carbon 和 claude-fable-5-2 可作为精确模型 ID 示例，但必须先从账号实时 /models 或控制台确认。thorough 会探测高级协议能力，但不会强行把 Gemini、Anthropic、Responses 或厂商原生端点改写成 Chat Completions。
 
 语音转文字、图像、视频、音乐、实时和厂商原生端点不应强行套用本检测器；应按对应协议单独验证。/models 返回、目录收录或单次 Chat Completions 成功都不能证明长期可用性、模型身份或高级能力。

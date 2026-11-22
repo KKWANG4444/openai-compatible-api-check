@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { isMainModule, main, parseArgs } from '../bin/model-api-check.mjs';
-import { assertPublicHostname, createPublicLookup, formatMarkdown, isPublicIpAddress, normalizeBaseUrl, parseJsonObject, protocolFrom, runCheck, usageFrom } from '../src/check.mjs';
+import { assertPublicHostname, createPublicLookup, formatMarkdown, isPublicIpAddress, normalizeBaseUrl, parseJsonObject, parseSse, protocolFrom, runCheck, usageFrom } from '../src/check.mjs';
 
 const apiKey = 'test-secret-key-that-must-never-appear';
 const model = 'test-model-v1';
@@ -42,6 +42,61 @@ before(async () => {
       const prompt = payload.messages[0].content;
       const requestedModel = payload.model;
       const isChallenge = prompt.startsWith('R1 dynamic challenge:');
+
+      if (requestedModel.includes('__aifast_invalid_')) {
+        response.writeHead(400, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ error: { message: 'model does not exist', type: 'invalid_request_error' } }));
+        return;
+      }
+
+      if (payload.stream) {
+        response.writeHead(200, { 'Content-Type': 'text/event-stream', 'X-Request-Id': 'req_stream_123' });
+        response.write(`data: ${JSON.stringify({
+          id: 'chatcmpl-stream-test',
+          object: 'chat.completion.chunk',
+          created: 1_784_000_000,
+          model: requestedModel,
+          choices: [{ index: 0, delta: { role: 'assistant', content: 'ok' }, finish_reason: null }],
+        })}\n\n`);
+        response.write(`data: ${JSON.stringify({
+          id: 'chatcmpl-stream-test',
+          object: 'chat.completion.chunk',
+          created: 1_784_000_000,
+          model: requestedModel,
+          choices: [{ index: 0, delta: { content: '!' }, finish_reason: 'stop' }],
+        })}\n\n`);
+        response.write(`data: ${JSON.stringify({
+          id: 'chatcmpl-stream-test',
+          object: 'chat.completion.chunk',
+          created: 1_784_000_000,
+          model: requestedModel,
+          choices: [],
+          usage: { prompt_tokens: 20, completion_tokens: 8, total_tokens: 28 },
+        })}\n\n`);
+        response.end('data: [DONE]\n\n');
+        return;
+      }
+
+      if (Array.isArray(payload.tools)) {
+        response.writeHead(200, { 'Content-Type': 'application/json', 'X-Request-Id': 'req_tool_123' });
+        response.end(JSON.stringify({
+          id: 'chatcmpl-tool-test',
+          object: 'chat.completion',
+          created: 1_784_000_000,
+          model: requestedModel,
+          choices: [{
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: null,
+              tool_calls: [{ id: 'call_aifast_probe', type: 'function', function: { name: 'aifast_probe', arguments: JSON.stringify({ value: prompt.match(/value "([a-f0-9]+)"/)?.[1] }) } }],
+            },
+            finish_reason: 'tool_calls',
+          }],
+          usage: { prompt_tokens: 20, completion_tokens: 8, total_tokens: 28 },
+        }));
+        return;
+      }
 
       if (requestedModel === 'redirect') {
         response.writeHead(307, { Location: '/redirect-target' }).end();
@@ -126,7 +181,7 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(report.verdict, '兼容良好');
   assert.equal(report.responseModel, model);
   assert.equal(report.schemaVersion, 2);
-  assert.equal(report.generator.version, '1.0.6');
+  assert.equal(report.generator.version, '1.1.0');
   assert.equal(report.requestCount, 3);
   assert.equal(report.usage.total, 56);
   assert.equal(report.signals.systemFingerprint, 'fp_test');
@@ -135,6 +190,19 @@ test('标准成功响应生成满分脱敏报告', async () => {
   assert.equal(formatMarkdown(report).includes(apiKey), false);
   assert.equal(formatMarkdown(report).includes('https://docs.aifast.hk/model-check/'), true);
   assert.doesNotMatch(formatMarkdown(report), /aifast\.(?:club|link)/i);
+});
+
+test('深度档核对 SSE、工具调用与错误响应，并保留核心门禁', async () => {
+  const report = await runCheck({ baseUrl, model, apiKey, profile: 'thorough', allowInsecureLocalhost: true });
+  assert.equal(report.ok, true);
+  assert.equal(report.generator.mode, 'thorough');
+  assert.equal(report.requestCount, 6);
+  assert.equal(report.advanced.profile, 'thorough');
+  assert.equal(report.advanced.score, 100);
+  assert.deepEqual(report.advanced.checks.map((check) => check.id), ['sse-stream', 'tool-call-schema', 'error-contract']);
+  assert.equal(report.advanced.latency.sampleCount, 3);
+  assert.match(formatMarkdown(report), /深度兼容性证据/);
+  assert.equal(JSON.stringify(report).includes(apiKey), false);
 });
 
 test('恶意上游回显 API Key 时 JSON 和 Markdown 均脱敏', async () => {
@@ -224,6 +292,14 @@ test('动态题 JSON 允许代码围栏但拒绝非对象', () => {
   assert.deepEqual(parseJsonObject('```json\n{"answer":42,"nonce":"abc"}\n```'), { answer: 42, nonce: 'abc' });
   assert.equal(parseJsonObject('[1,2,3]'), null);
   assert.equal(parseJsonObject('not-json'), null);
+});
+
+test('SSE 解析器识别事件、JSON 错误和 [DONE]', () => {
+  const parsed = parseSse('event: message\ndata: {"id":"x"}\n\ndata: [DONE]\n\n');
+  assert.equal(parsed.events.length, 2);
+  assert.equal(parsed.jsonEvents[0].json.id, 'x');
+  assert.equal(parsed.done, true);
+  assert.deepEqual(parseSse('data: {broken}\n\n').parseErrors, ['{broken}']);
 });
 
 test('Markdown 动态字段会转义竖线、换行和反斜杠', async () => {
@@ -361,7 +437,7 @@ test('CLI 支持版本参数', async () => {
     stderr: { write: () => {} },
   });
   assert.equal(status, 0);
-  assert.equal(stdout, '1.0.6\n');
+  assert.equal(stdout, '1.1.0\n');
 });
 
 test('CLI 通过符号链接启动时仍能识别主模块', async () => {

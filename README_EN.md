@@ -28,6 +28,8 @@ The checker is deliberately vendor-neutral. A passing report is a compatibility 
 
 The website accepts public HTTPS OpenAI Compatible APIs and checks model declarations, token fields, randomized tasks, output behavior, knowledge-boundary signals, SSE, and tool calls. Use a temporary, low-limit API key and revoke it after testing.
 
+The CLI and GitHub Action also support an explicit `thorough` profile. It keeps the nine core gates, then adds three bounded probes: SSE chunk framing and `[DONE]`, a no-side-effect function tool schema, and a deliberately invalid model request that must return a structured 4xx error. It reports sampled first-event, p50, and p95 latency without presenting them as an SLA. Tool-call support is reported as additional evidence and is not required for the core Chat Completions verdict.
+
 [Read the report interpretation guide](https://docs.aifast.hk/en/guides/model-check-report-guide/?utm_source=github&utm_medium=repository&utm_campaign=model-check&utm_content=source-en-report-guide)
 
 Codex custom providers use the Responses API and are outside the current Chat Completions browser test. Use the [Codex custom provider guide](https://docs.aifast.hk/en/tools/codex/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-en-codex) and [Codex gateway validation checklist](https://docs.aifast.hk/en/troubleshooting/codex-gateway-checklist/?utm_source=github&utm_medium=repository&utm_campaign=integration-guide&utm_content=source-en-codex-checklist) instead.
@@ -49,7 +51,7 @@ The online website performs additional checks, including output-style observatio
 
 ## Versioned GitHub Action
 
-Use `KKWANG4444/openai-compatible-api-check@v1.0.6` for a fixed patch release, or pin the full commit SHA. The `v1` alias follows verified patch releases. This patch fixes private IPv4-mapped IPv6 validation and checks protocol, model declarations and token arithmetic in both generation responses. Any required failure produces a failed verdict; invalid or overflowing token counts are not aggregated. The nine weights, report fields and request count remain unchanged. See the [workflow example](README.md#在-github-actions-持续验收) and keep API keys in GitHub Secrets.
+Use `KKWANG4444/openai-compatible-api-check@v1.1.0` for a fixed patch release, or pin the full commit SHA. The `v1` alias follows verified patch releases. Quick mode fixes private IPv4-mapped IPv6 validation and checks protocol, model declarations and token arithmetic in both generation responses; thorough mode adds SSE, tool-call schema, error-contract, and latency evidence. Any core required failure produces a failed verdict; invalid or overflowing token counts are not aggregated. See the [workflow example](README.md#在-github-actions-持续验收) and keep API keys in GitHub Secrets.
 
 ## Reproducible Artifacts
 

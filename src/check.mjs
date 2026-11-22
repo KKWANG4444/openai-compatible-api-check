@@ -183,6 +183,251 @@ async function requestJson(url, options, timeoutMs, allowLocal = false) {
   }
 }
 
+async function requestText(url, options, timeoutMs, allowLocal = false) {
+  const startedAt = Date.now();
+  try {
+    const { response, text, firstByteMs } = await new Promise((resolve, reject) => {
+      const target = new URL(url);
+      const request = target.protocol === 'https:' ? httpsRequest : httpRequest;
+      let timer;
+      let firstByteAt = null;
+      const req = request(target, {
+        method: options.method, headers: options.headers, agent: false,
+        lookup: allowLocal ? undefined : publicLookup,
+      }, (response) => {
+        const chunks = [];
+        let size = 0;
+        response.on('data', (chunk) => {
+          if (firstByteAt === null) firstByteAt = Date.now();
+          size += chunk.length;
+          if (size > 8 * 1024 * 1024) req.destroy(new Error('响应超过 8 MiB 限制'));
+          else chunks.push(chunk);
+        });
+        response.on('error', (error) => { clearTimeout(timer); reject(error); });
+        response.on('end', () => clearTimeout(timer) || resolve({
+          response,
+          text: Buffer.concat(chunks).toString('utf8'),
+          firstByteMs: firstByteAt === null ? null : firstByteAt - startedAt,
+        }));
+      });
+      req.on('error', (error) => { clearTimeout(timer); reject(error); });
+      timer = setTimeout(() => req.destroy(new Error('请求超时')), timeoutMs);
+      req.end(options.body);
+    });
+    const ok = response.statusCode >= 200 && response.statusCode < 300;
+    return {
+      ok,
+      status: response.statusCode,
+      durationMs: Date.now() - startedAt,
+      firstByteMs,
+      requestId: response.headers['x-request-id'] || response.headers['request-id'] || null,
+      contentType: response.headers['content-type'] || null,
+      text,
+      error: ok ? null : text.slice(0, 240) || String(response.statusMessage),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      durationMs: Date.now() - startedAt,
+      firstByteMs: null,
+      requestId: null,
+      contentType: null,
+      text: '',
+      error: String(error),
+    };
+  }
+}
+
+function parseSse(text) {
+  const events = [];
+  const parseErrors = [];
+  let done = false;
+  let eventName = null;
+  let dataLines = [];
+
+  const flush = () => {
+    if (dataLines.length === 0 && eventName === null) return;
+    const data = dataLines.join('\n');
+    const event = { event: eventName, data, json: null };
+    if (data === '[DONE]') {
+      done = true;
+    } else if (data) {
+      try {
+        event.json = JSON.parse(data);
+      } catch {
+        parseErrors.push(data.slice(0, 160));
+      }
+    }
+    events.push(event);
+    eventName = null;
+    dataLines = [];
+  };
+
+  for (const line of String(text ?? '').split(/\r?\n/)) {
+    if (line === '') {
+      flush();
+    } else if (line.startsWith(':')) {
+      continue;
+    } else if (line.startsWith('event:')) {
+      eventName = line.slice(6).trim();
+    } else if (line.startsWith('data:')) {
+      dataLines.push(line.slice(5).replace(/^ /, ''));
+    }
+  }
+  flush();
+  return { events, done, parseErrors, jsonEvents: events.filter((event) => event.json !== null) };
+}
+
+function parseToolArguments(value) {
+  if (typeof value !== 'string') return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function percentile(values, percentileRank) {
+  const sorted = values.filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  if (sorted.length === 0) return null;
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * percentileRank) - 1));
+  return sorted[index];
+}
+
+async function runThoroughChecks({ normalizedBaseUrl, requestedModel, authorization, reportNonce, timeoutMs, allowLocal, chat, challenge }) {
+  const stream = await requestText(endpoint(normalizedBaseUrl, '/chat/completions'), {
+    method: 'POST',
+    headers: { ...authorization, 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+    body: JSON.stringify({
+      model: requestedModel,
+      temperature: 0,
+      max_tokens: 64,
+      stream: true,
+      stream_options: { include_usage: true },
+      messages: [{ role: 'user', content: `SSE probe ${reportNonce}: reply with one short sentence.` }],
+    }),
+  }, timeoutMs, allowLocal);
+  const parsedStream = parseSse(stream.text);
+  const streamChunks = parsedStream.jsonEvents.map((event) => event.json);
+  const validChunks = streamChunks.filter((chunk) => (
+    typeof chunk?.id === 'string'
+    && Array.isArray(chunk?.choices)
+    && ((chunk.choices.length === 0 && chunk.usage && typeof chunk.usage === 'object')
+      || (chunk.choices.length > 0
+        && typeof chunk.choices[0] === 'object'
+        && (chunk.choices[0].delta === undefined || typeof chunk.choices[0].delta === 'object')))
+  ));
+  const hasDelta = streamChunks.some((chunk) => chunk?.choices?.some((choice) => (
+    choice?.delta && typeof choice.delta === 'object'
+      && (typeof choice.delta.content === 'string' || choice.delta.tool_calls !== undefined || choice.delta.role !== undefined)
+  )));
+  const hasFinishReason = streamChunks.some((chunk) => chunk?.choices?.some((choice) => typeof choice?.finish_reason === 'string'));
+  const streamPassed = stream.ok
+    && /text\/event-stream/i.test(stream.contentType || '')
+    && parsedStream.done
+    && parsedStream.parseErrors.length === 0
+    && streamChunks.length > 0
+    && validChunks.length === streamChunks.length
+    && hasDelta
+    && hasFinishReason;
+
+  const toolName = 'aifast_probe';
+  const tool = await requestJson(endpoint(normalizedBaseUrl, '/chat/completions'), {
+    method: 'POST',
+    headers: { ...authorization, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: requestedModel,
+      temperature: 0,
+      max_tokens: 64,
+      tool_choice: { type: 'function', function: { name: toolName } },
+      tools: [{ type: 'function', function: {
+        name: toolName,
+        description: 'Return the provided probe value without calling any external service.',
+        parameters: {
+          type: 'object',
+          properties: { value: { type: 'string' } },
+          required: ['value'],
+          additionalProperties: false,
+        },
+      } }],
+      messages: [{ role: 'user', content: `Call ${toolName} exactly once with value "${reportNonce}".` }],
+    }),
+  }, timeoutMs, allowLocal);
+  const toolMessage = tool.data?.choices?.[0]?.message;
+  const modernCall = Array.isArray(toolMessage?.tool_calls)
+    ? toolMessage.tool_calls.find((call) => call?.type === 'function' && call?.function?.name === toolName)
+    : null;
+  const legacyCall = toolMessage?.function_call?.name === toolName ? toolMessage.function_call : null;
+  const selectedCall = modernCall?.function || legacyCall;
+  const toolArguments = parseToolArguments(selectedCall?.arguments);
+  const toolPassed = tool.ok && Boolean(selectedCall) && toolArguments?.value === reportNonce;
+
+  const invalidModel = `${requestedModel.slice(0, 120)}__aifast_invalid_${reportNonce}`;
+  const errorProbe = await requestJson(endpoint(normalizedBaseUrl, '/chat/completions'), {
+    method: 'POST',
+    headers: { ...authorization, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: invalidModel,
+      temperature: 0,
+      max_tokens: 1,
+      messages: [{ role: 'user', content: 'This request must fail because the model ID is intentionally invalid.' }],
+    }),
+  }, timeoutMs, allowLocal);
+  const errorObject = errorProbe.data?.error;
+  const errorPassed = !errorProbe.ok
+    && errorProbe.status >= 400
+    && errorProbe.status < 500
+    && errorObject
+    && typeof errorObject === 'object'
+    && typeof errorObject.message === 'string'
+    && !JSON.stringify(errorObject).includes(authorization.Authorization.replace('Bearer ', ''));
+
+  const latencySamples = [chat.durationMs, challenge.durationMs, stream.durationMs];
+  const advancedChecks = [
+    {
+      id: 'sse-stream',
+      name: 'SSE 流式事件',
+      passed: streamPassed,
+      detail: streamPassed
+        ? `收到 ${streamChunks.length} 个合法事件，已收到 [DONE]，首事件 ${stream.firstByteMs ?? '未知'} ms`
+        : `HTTP ${stream.status}；事件 ${streamChunks.length}；解析错误 ${parsedStream.parseErrors.length}；[DONE] ${parsedStream.done ? '有' : '无'}；Content-Type ${stream.contentType || '未知'}`,
+    },
+    {
+      id: 'tool-call-schema',
+      name: '工具调用结构',
+      passed: toolPassed,
+      detail: toolPassed
+        ? `工具 ${toolName} 返回可解析 JSON 参数（${modernCall ? 'tool_calls' : 'function_call'}）`
+        : `HTTP ${tool.status}；未获得带正确函数名和 JSON 参数的工具调用${tool.error ? `：${tool.error}` : ''}`,
+    },
+    {
+      id: 'error-contract',
+      name: '错误响应契约',
+      passed: errorPassed,
+      detail: errorPassed
+        ? `故意使用不存在模型得到 HTTP ${errorProbe.status}，且返回结构化 error.message`
+        : `故意错误模型得到 HTTP ${errorProbe.status}，未满足 4xx 结构化错误响应`,
+    },
+  ];
+  const passed = advancedChecks.filter((check) => check.passed).length;
+  return {
+    profile: 'thorough',
+    requestCount: 3,
+    score: Math.round((passed / advancedChecks.length) * 100),
+    checks: advancedChecks,
+    latency: {
+      samples: latencySamples,
+      sampleCount: latencySamples.filter((value) => Number.isFinite(value)).length,
+      p50Ms: percentile(latencySamples, 0.5),
+      p95Ms: percentile(latencySamples, 0.95),
+      streamFirstByteMs: stream.firstByteMs,
+      note: '这是本次检测的少量样本，不代表长期可用性或 SLA。',
+    },
+  };
+}
+
 function responseText(data) {
   const content = data?.choices?.[0]?.message?.content;
   if (typeof content === 'string') return content.trim();
@@ -289,6 +534,7 @@ export async function runCheck({
   apiKey,
   timeoutMs = 30_000,
   allowInsecureLocalhost = false,
+  profile = 'quick',
 }) {
   const requestedModel = typeof model === 'string' ? model.trim() : '';
   const normalizedApiKey = typeof apiKey === 'string' ? apiKey.trim() : '';
@@ -299,6 +545,7 @@ export async function runCheck({
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < MIN_TIMEOUT_MS || timeoutMs > MAX_TIMEOUT_MS) {
     throw new Error(`超时时间必须是 ${MIN_TIMEOUT_MS} 到 ${MAX_TIMEOUT_MS} 之间的整数毫秒值`);
   }
+  if (!['quick', 'thorough'].includes(profile)) throw new Error('检测档只能是 quick 或 thorough');
 
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl, allowInsecureLocalhost);
   const allowLocal = allowInsecureLocalhost && ['127.0.0.1', 'localhost', '::1'].includes(new URL(normalizedBaseUrl).hostname.replace(/^\[|\]$/g, ''));
@@ -382,11 +629,14 @@ export async function runCheck({
   ];
   const score = checks.reduce((total, check) => total + (check.passed ? check.weight : 0), 0);
   const ok = requiredChecksPassed(checks);
+  const advanced = profile === 'thorough'
+    ? await runThoroughChecks({ normalizedBaseUrl, requestedModel, authorization, reportNonce, timeoutMs, allowLocal, chat, challenge })
+    : null;
   const report = {
     $schema: REPORT_SCHEMA_URL,
     schemaVersion: 2,
     reportId: `aifast-check-${reportNonce}`,
-    generator: { name: 'openai-compatible-api-check', version: '1.0.6', mode: 'quick' },
+    generator: { name: 'openai-compatible-api-check', version: '1.1.0', mode: profile },
     ok,
     checkedAt: new Date().toISOString(),
     baseUrl: normalizedBaseUrl,
@@ -394,7 +644,7 @@ export async function runCheck({
     responseModel: metadata.responseModel,
     score,
     verdict: ok ? scoreVerdict(score) : '需要排查',
-    requestCount: 3,
+    requestCount: 3 + (advanced?.requestCount || 0),
     usage: totalUsage,
     signals: {
       systemFingerprint: metadata.systemFingerprint,
@@ -402,6 +652,7 @@ export async function runCheck({
       protocolFields: protocol.signals,
     },
     checks,
+    ...(advanced ? { advanced } : {}),
     disclaimer: '本报告是检测时点的 OpenAI Compatible 协议、元数据、Token 与行为抽样结果，不是模型厂商认证，也不能单独证明底层模型身份。请结合多轮测试、真实业务题集、成本和稳定性判断。',
   };
 
@@ -413,6 +664,22 @@ export function formatMarkdown(report) {
   const usage = report.usage?.total === null || report.usage?.total === undefined
     ? '未完整返回'
     : `${report.usage.total}（输入 ${report.usage.input} / 输出 ${report.usage.output}）`;
+  const advancedRows = report.advanced?.checks?.length
+    ? [
+      '',
+      '## 深度兼容性证据',
+      '',
+      `- 检测档：${markdownInline(report.advanced.profile)}`,
+      `- 深度证据分：${markdownInline(report.advanced.score)}/100`,
+      `- 延迟样本：p50 ${markdownInline(report.advanced.latency?.p50Ms ?? '未知')} ms；p95 ${markdownInline(report.advanced.latency?.p95Ms ?? '未知')} ms；首个 SSE 事件 ${markdownInline(report.advanced.latency?.streamFirstByteMs ?? '未知')} ms`,
+      '',
+      '| 深度检查项 | 结果 | 证据 |',
+      '| --- | --- | --- |',
+      ...report.advanced.checks.map((check) => `| ${markdownInline(check.name)} | ${check.passed ? '通过' : '未通过'} | ${markdownInline(check.detail || '-')} |`),
+      '',
+      `> ${markdownInline(report.advanced.latency?.note || '深度检测同样只是一次性样本。')}`,
+    ]
+    : [];
   return [
     '# OpenAI Compatible API 自检报告',
     '',
@@ -427,6 +694,7 @@ export function formatMarkdown(report) {
     '| 检查项 | 结果 | 证据 |',
     '| --- | --- | --- |',
     ...rows,
+    ...advancedRows,
     '',
     `> ${markdownInline(report.disclaimer)}`,
     '',
@@ -434,4 +702,4 @@ export function formatMarkdown(report) {
   ].join('\n');
 }
 
-export { assertPublicHostname, createPublicLookup, isPublicIpAddress, markdownInline, normalizeBaseUrl, parseJsonObject, protocolFrom, requiredChecksPassed, usageFrom };
+export { assertPublicHostname, createPublicLookup, isPublicIpAddress, markdownInline, normalizeBaseUrl, parseJsonObject, parseSse, protocolFrom, requiredChecksPassed, usageFrom };
