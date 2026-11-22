@@ -1,6 +1,6 @@
 # 模型 API 检测方法论
 
-本文说明 `openai-compatible-api-check` 如何采集证据、如何给分，以及哪些结论不能由一次黑盒检测推出。方法复核日期：2026-11-10。
+本文说明 `openai-compatible-api-check` 如何采集证据、如何给分，以及哪些结论不能由一次黑盒检测推出。方法复核日期：2026-11-23。
 
 ## 检测对象
 
@@ -55,3 +55,9 @@
 JSON 报告遵循 [`schema/report.schema.json`](../schema/report.schema.json)，示例见 [`examples/report.example.json`](../examples/report.example.json)。公开报告前应移除业务输入、用户数据及可关联内部系统的 request ID。请勿发布真实 API Key。
 
 本项目由 AI快站维护，但检测工具面向任意兼容服务。AI快站官网、模型价格或注册入口不参与检测计分。
+
+## 目录同步记录（2026-11-23）
+
+检测器仍只验证公开 HTTPS OpenAI Compatible Chat Completions Base URL。当前目录中的 qwen4-max、gpt-6.2-astra、gpt-6.2-sol、hy4-flash、gemini-4-hydrogen、gemini-4-carbon 和 claude-fable-5-2 可作为精确模型 ID 示例，但必须先从账号实时 /models 或控制台确认。
+
+语音转文字、图像、视频、音乐、实时和厂商原生端点不应强行套用本检测器；应按对应协议单独验证。/models 返回、目录收录或单次 Chat Completions 成功都不能证明长期可用性、模型身份或高级能力。
