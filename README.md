@@ -155,3 +155,13 @@ jobs:
 ## 许可证
 
 MIT
+
+## .hk 模型目录同步与检测边界（2026-11-23）
+
+本次按 https://www.aifast.hk/api/pricing 与 https://www.aifast.hk/api/announcements 复核。公开目录当前约 322 条模型记录，模型数量会变化，不应把目录总数当作在线检测通过数。
+
+**可直接进入本检测器的模型示例：** qwen4-max、gpt-6.2-astra、gpt-6.2-sol、hy4-flash、gemini-4-hydrogen、gemini-4-carbon、claude-fable-5-2。前提是当前账号目录返回该精确 ID，并选择 OpenAI-compatible Chat Completions 端点；gemini、anthropic、Responses 或厂商原生端点不由本检测器自动改写。
+
+**专用端点不属于当前 Chat Completions 检测范围：** scribe_v2、scribe_v3（语音转文字）、doubao-seedance-2-5-flash-261115（视频）和 doubao-seedream-5-5-261028（图像）。这些模型应按对应端点和字段单独验收，不要把检测失败解释为模型不可用。
+
+**状态提示：** 公告显示 gemini-3.8-flash 和 gemini-4-argon 曾临时下架；调用前必须重新读取当前目录、公告和账号权限。目录收录不等于生成、SSE、工具调用或模型身份已验证。
