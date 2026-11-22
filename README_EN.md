@@ -81,3 +81,13 @@ Model declarations, system fingerprints, and request IDs may be rewritten by a g
 - [International payment and account setup](https://docs.aifast.hk/en/payment/?utm_source=github&utm_medium=repository&utm_campaign=international-payment&utm_content=source-en-payment)
 
 This repository is maintained by the operator of AIFast. Product statements, point-in-time test results, and contractual service levels are kept separate.
+
+## .hk catalog sync and checker boundary (2026-11-23)
+
+This snapshot was checked against https://www.aifast.hk/api/pricing and https://www.aifast.hk/api/announcements. The public catalog contains about 322 records and changes over time; the count is not a passing-test count.
+
+**Examples that can be checked directly:** qwen4-max, gpt-6.2-astra, gpt-6.2-sol, hy4-flash, gemini-4-hydrogen, gemini-4-carbon, and claude-fable-5-2. The account must return the exact ID and the user must select an OpenAI-compatible Chat Completions endpoint. This checker does not rewrite Gemini-native, Anthropic-native, or Responses requests.
+
+**Specialized endpoints outside this Chat Completions checker:** scribe_v2, scribe_v3 (speech-to-text), doubao-seedance-2-5-flash-261115 (video), and doubao-seedream-5-5-261028 (image). Validate these with their dedicated endpoint and request schema instead of treating a Chat Completions failure as model unavailability.
+
+**Availability note:** recent notices temporarily removed gemini-3.8-flash and gemini-4-argon. Re-read the current catalog, notices, and account permissions before testing. A catalog entry does not prove generation, SSE, tool-call support, or model identity.
